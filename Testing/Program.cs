@@ -21,7 +21,8 @@ namespace Testing {
             return new {
                 status = "ok",
                 message = "service is up and running!",
-                helpurl = Uri.AbsoluteUri + "help"
+                helpurl = Uri.AbsoluteUri + "help",
+                date = DateTime.Now
             };
         }
     }

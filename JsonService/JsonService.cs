@@ -71,7 +71,7 @@ namespace JsonWebService {
                       let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
                       where attribs.Count() > 0
                       select new ServiceBridge {
-                          MethodInfo = (MethodInfo)mi,
+                          MethodInfo = mi,
                           Attribute = attribs.Single()
                       };
         }
