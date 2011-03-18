@@ -22,6 +22,13 @@ namespace UnitTests {
             };
         }
 
+        [Get("mult?value1={a}&value2={b}", Description = "Returns the product of 2 numbers.", Example = "mult?value1=2&value2=7")]
+        public object Product(int a = 0, int b = 0) {
+            return new {
+                product = a * b
+            };
+        }
+
         [Post("save?id={id}", Description = "Updates a record.", Example = "save?id=0")]
         public object Update(int id) {
             return new {

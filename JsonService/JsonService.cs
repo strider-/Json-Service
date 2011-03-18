@@ -166,6 +166,7 @@ namespace JsonWebService {
                                          required = r,
                                          @default = r ? null : p.DefaultValue
                                      },
+                        verb = m.Attribute.Verb,
                         example = b ? absUri.AbsoluteUri : string.Empty
                     }).ToArray();
         }

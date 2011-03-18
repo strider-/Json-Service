@@ -66,7 +66,7 @@ namespace UnitTests {
 
         [TestMethod]
         public void ParameterTypeFailure() {
-            dynamic doc = GetDocument("add?value1=2&value2=X");
+            dynamic doc = GetDocument("add?value1=X&value2=Y");
 
             Assert.IsTrue(doc.status == "failed");
         }
@@ -124,6 +124,20 @@ namespace UnitTests {
             dynamic doc = PostDocument("save?id=1");
 
             Assert.IsTrue(doc.status == "ok");
+        }
+
+        [TestMethod]
+        public void MissingRequiredParameter() {
+            dynamic doc = GetDocument("add?value1=3");
+
+            Assert.IsTrue(doc.status == "failed");
+        }
+
+        [TestMethod]
+        public void MissingNonRequiredParameter() {
+            dynamic doc = GetDocument("mult?value2=3");
+
+            Assert.IsTrue(doc.product == 0);
         }
 
         private TestContext testContextInstance;

@@ -24,12 +24,15 @@ namespace JsonWebService {
             List<object> args = new List<object>();
 
             foreach(var pm in MethodInfo.GetParameters()) {
+                bool hasDefault = pm.DefaultValue != System.DBNull.Value;
                 string key = Attribute.GetKey(pm.Name);
 
-                if(qs.AllKeys.Contains(key)) {
+                if(!qs.AllKeys.Contains(key) && !hasDefault) {
+                    throw new ArgumentException(key + " is required.", key, new Exception("Missing required parameter"));
+                } else {
                     string val = qs[key];
 
-                    if(val == null && pm.DefaultValue != System.DBNull.Value)
+                    if(val == null && hasDefault)
                         args.Add(pm.DefaultValue);
                     else {
                         try {
@@ -42,20 +45,6 @@ namespace JsonWebService {
             }
 
             return args.ToArray();
-        }
-        public bool IsGet {
-            get {
-                if(this.Attribute != null)
-                    return this.Attribute is GetAttribute;
-                return false;
-            }
-        }
-        public bool IsPost {
-            get {
-                if(this.Attribute != null)
-                    return this.Attribute is PostAttribute;
-                return false;
-            }
         }
     }
 }
