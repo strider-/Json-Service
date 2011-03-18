@@ -22,7 +22,7 @@ namespace Testing {
                 status = "ok",
                 message = "service is up and running!",
                 helpurl = Uri.AbsoluteUri + "help"
-            };
+            };            
         }
     }
 }
