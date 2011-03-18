@@ -34,6 +34,11 @@ namespace UnitTests {
             return JsonDocument.Parse(raw);
         }
 
+        public dynamic PostDocument(string RelativeUrl) {
+            string raw = wc.UploadString(ts.Uri.AbsoluteUri + RelativeUrl, "POST", string.Empty);
+            return JsonDocument.Parse(raw);
+        }
+
         [TestMethod]
         public void NoParameterMethodTest() {
             Assert.IsNotNull(ts.Root());
@@ -48,12 +53,12 @@ namespace UnitTests {
         }
 
         [TestMethod]
-        public void ParameterMethodTest() {
+        public void ParameterMethod() {
             Assert.IsNotNull(ts.Sum(2, 2));
         }
 
         [TestMethod]
-        public void ParameterServiceTest() {
+        public void ParameterService() {
             dynamic doc = GetDocument("add?value1=2&value2=3");
 
             Assert.IsTrue(doc.sum == 5);
@@ -74,7 +79,7 @@ namespace UnitTests {
         }
 
         [TestMethod]
-        public void AllowDescribeOnTest() {
+        public void AllowDescribeOn() {
             ts.Authorize = false;
             ts.AllowDescribe = true;
             dynamic doc = GetDocument("help");
@@ -83,7 +88,7 @@ namespace UnitTests {
         }
 
         [TestMethod]
-        public void AllowDescribeOffTest() {
+        public void AllowDescribeOff() {
             ts.Authorize = false;
             ts.AllowDescribe = false;
             dynamic doc = GetDocument("help");
@@ -92,7 +97,7 @@ namespace UnitTests {
         }
 
         [TestMethod]
-        public void AuthorizeOnTest() {
+        public void AuthorizeOn() {
             ts.Authorize = true;
             dynamic doc = GetDocument("");
 
@@ -100,9 +105,23 @@ namespace UnitTests {
         }
 
         [TestMethod]
-        public void AuthorizeOffTest() {
+        public void AuthorizeOff() {
             ts.Authorize = false;
             dynamic doc = GetDocument("?apikey=anythingwillwork");
+
+            Assert.IsTrue(doc.status == "ok");
+        }
+
+        [TestMethod]
+        public void HttpVerbReject() {
+            dynamic doc = GetDocument("save?id=1");
+
+            Assert.IsTrue(doc.status == "failed");
+        }
+
+        [TestMethod]
+        public void HttpVerbAccept() {
+            dynamic doc = PostDocument("save?id=1");
 
             Assert.IsTrue(doc.status == "ok");
         }

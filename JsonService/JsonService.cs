@@ -84,7 +84,7 @@ namespace JsonWebService {
         }
         void ProcessRequest(HttpListenerContext Context) {
             JsonMethod m = methods.Where(jm => jm.IsMatch(Context.Request.Url.LocalPath)).FirstOrDefault();
-
+            
             if(Authorize && !AuthorizeRequest(Context.Request)) {
                 Log("Unauthorized request");
                 Respond(Context.Response, Unauthorized());

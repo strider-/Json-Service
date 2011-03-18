@@ -22,6 +22,14 @@ namespace UnitTests {
             };
         }
 
+        [Post("save?id={id}", Description = "Updates a record.", Example = "save?id=0")]
+        public object Update(int id) {
+            return new {
+                status = "ok",
+                message = "record updated"
+            };
+        }
+
         protected override bool AuthorizeRequest(System.Net.HttpListenerRequest Request) {
             return Request.QueryString["apikey"] != null;
         }
