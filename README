@@ -1,0 +1,11 @@
+Run a custom json based web service by inheriting the JsonService class.
+
+public class MyService : JsonService {
+   [Get("/")]
+   public object Root() {
+      return new {
+         status = "ok,
+         message = "service is running!"
+      }
+   }
+}
