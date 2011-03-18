@@ -28,6 +28,24 @@ namespace JsonWebService {
             dict = mc.OfType<Match>().ToDictionary(k => k.Groups["Value"].Value, v => v.Groups["Key"].Value);
         }
         /// <summary>
+        /// Gets the parameter name for a given placeholder
+        /// </summary>
+        /// <param name="Placeholder">Placeholder name, which should match the parameter name in the actual method.</param>
+        /// <returns></returns>
+        public string GetParameterName(string Placeholder) {
+            if(dict.ContainsKey(Placeholder))
+                return dict[Placeholder];
+            return null;
+        }
+        /// <summary>
+        /// Gets the placeholder for a given parameter name
+        /// </summary>
+        /// <param name="ParameterName">The parameter name in the query string.</param>
+        /// <returns></returns>
+        public string GetPlaceholder(string ParameterName) {
+            return dict.Where(kvp => kvp.Value.Equals(ParameterName, StringComparison.InvariantCultureIgnoreCase)).SingleOrDefault().Key;
+        }
+        /// <summary>
         /// Gets the template for a service method call
         /// </summary>
         public string UriTemplate {
@@ -70,24 +88,6 @@ namespace JsonWebService {
             get {
                 return dict.Keys.ToArray();
             }
-        }
-        /// <summary>
-        /// Gets the parameter name for a given placeholder
-        /// </summary>
-        /// <param name="Placeholder">Placeholder name, which should match the parameter name in the actual method.</param>
-        /// <returns></returns>
-        public string GetParameterName(string Placeholder) {
-            if(dict.ContainsKey(Placeholder))
-                return dict[Placeholder];
-            return null;
-        }
-        /// <summary>
-        /// Gets the placeholder for a given parameter name
-        /// </summary>
-        /// <param name="ParameterName">The parameter name in the query string.</param>
-        /// <returns></returns>
-        public string GetPlaceholder(string ParameterName) {
-            return dict.Where(kvp => kvp.Value.Equals(ParameterName, StringComparison.InvariantCultureIgnoreCase)).SingleOrDefault().Key;
         }
         /// <summary>
         /// Gets the http verb

@@ -76,5 +76,18 @@ namespace JsonWebService {
 
             return result;
         }
+        /// <summary>
+        /// Returns the Uri for an example use, if an example was specified.
+        /// </summary>
+        /// <param name="ServiceUri">Uri the service is running on</param>
+        /// <returns></returns>
+        public Uri GetExampleUri(Uri ServiceUri) {
+            Uri result = null;
+
+            if(string.IsNullOrWhiteSpace(Attribute.Example) || !Uri.TryCreate(ServiceUri, Attribute.Example, out result))
+                return null;           
+                
+            return result;
+        }
     }
 }

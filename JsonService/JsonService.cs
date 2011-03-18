@@ -65,7 +65,7 @@ namespace JsonWebService {
             listener.Prefixes.Clear();
             listener.Prefixes.Add(string.Format("http://{0}:{1}/", this.Host, this.Port));
             Uri = new System.Uri(listener.Prefixes.First().Replace("+", "localhost"));
-
+            
             Log("Obtaining service method information");
             methods = from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
                       let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
@@ -154,9 +154,8 @@ namespace JsonWebService {
         /// </summary>
         /// <returns></returns>
         object Describe() {
-            Uri absUri = null;
             return (from m in methods
-                    let b = !string.IsNullOrWhiteSpace(m.Attribute.Example) && Uri.TryCreate(Uri, m.Attribute.Example, out absUri)
+                    let e = m.GetExampleUri(Uri)
                     select new {
                         path = m.Attribute.Path,
                         desc = m.Attribute.Description,
@@ -170,7 +169,7 @@ namespace JsonWebService {
                                          @default = r ? null : p.DefaultValue
                                      },
                         verb = m.Attribute.Verb,
-                        example = b ? absUri.AbsoluteUri : string.Empty
+                        example = e == null ? string.Empty : e.AbsoluteUri
                     }).ToArray();
         }
 
