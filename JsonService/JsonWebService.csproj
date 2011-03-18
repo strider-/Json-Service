@@ -43,7 +43,7 @@
     <Compile Include="Attributes.cs" />
     <Compile Include="JsonDocument.cs" />
     <Compile Include="JsonDynamicDocument.cs" />
-    <Compile Include="JsonMethod.cs" />
+    <Compile Include="ServiceBridge.cs" />
     <Compile Include="JsonService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

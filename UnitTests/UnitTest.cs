@@ -8,7 +8,7 @@ using JsonWebService;
 
 namespace UnitTests {
     /// <summary>
-    /// Testing service features
+    /// Testing json service features
     /// </summary>
     [TestClass]
     public class UnitTest {
@@ -40,14 +40,13 @@ namespace UnitTests {
         }
 
         [TestMethod]
-        public void NoParameterMethodTest() {
+        public void NoParameterMethodCall() {
             Assert.IsNotNull(ts.Root());
         }
 
         [TestMethod]
-        public void NoParameterServiceTest() {
-            string raw = wc.DownloadString(ts.Uri);
-            dynamic doc = JsonDocument.Parse(raw);
+        public void NoParameterServiceCall() {            
+            dynamic doc = GetDocument("");
 
             Assert.IsTrue(doc.status == "ok");
         }
@@ -69,6 +68,13 @@ namespace UnitTests {
             dynamic doc = GetDocument("add?value1=X&value2=Y");
 
             Assert.IsTrue(doc.status == "failed");
+        }
+
+        [TestMethod]
+        public void ParameterNameCasingIrrelevant() {
+            dynamic doc = GetDocument("add?VALUE1=3&vAlUe2=10");
+
+            Assert.IsTrue(doc.sum == 13);
         }
 
         [TestMethod]
@@ -102,6 +108,7 @@ namespace UnitTests {
             dynamic doc = GetDocument("");
 
             Assert.IsTrue(doc.status == "failed");
+            ts.Authorize = false;
         }
 
         [TestMethod]

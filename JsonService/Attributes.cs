@@ -9,7 +9,8 @@ namespace JsonWebService {
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public abstract class VerbAttribute : Attribute {
-        const string REGEX = @"(?<Key>[^?&=]+)=(?<Value>[^&]*)";
+        const string REGEX = @"(?<Key>[^?&=]+)=\{(?<Value>[^&]*)\}";
+        Dictionary<string, string> dict;
 
         /// <summary>
         /// Sets the type of verb this method will accept.
@@ -24,8 +25,7 @@ namespace JsonWebService {
             if(!Path.StartsWith("/"))
                 Path = "/" + Path;
 
-            Keys = mc.OfType<Match>().Select(m => m.Groups["Key"].Value).ToArray();
-            Placeholders = mc.OfType<Match>().Select(m => m.Groups["Value"].Value.Trim('{', '}')).ToArray();
+            dict = mc.OfType<Match>().ToDictionary(k => k.Groups["Value"].Value, v => v.Groups["Key"].Value);
         }
         /// <summary>
         /// Gets the template for a service method call
@@ -56,30 +56,38 @@ namespace JsonWebService {
             set;
         }
         /// <summary>
-        /// Gets the keys for the method call
+        /// Gets the names of the parameters for the method call
         /// </summary>
-        public string[] Keys {
-            get;
-            private set;
+        public string[] ParameterNames {
+            get {
+                return dict.Values.ToArray();
+            }
         }
         /// <summary>
         /// Gets the placeholder values for the method call
         /// </summary>
         public string[] Placeholders {
-            get;
-            private set;
+            get {
+                return dict.Keys.ToArray();
+            }
         }
         /// <summary>
-        /// Gets the key for a given placeholder
+        /// Gets the parameter name for a given placeholder
         /// </summary>
         /// <param name="Placeholder">Placeholder name, which should match the parameter name in the actual method.</param>
         /// <returns></returns>
-        public string GetKey(string Placeholder) {
-            for(int i = 0; i < Placeholders.Length; i++) {
-                if(Placeholders[i].Equals(Placeholder, StringComparison.InvariantCultureIgnoreCase))
-                    return Keys[i];
-            }
+        public string GetParameterName(string Placeholder) {
+            if(dict.ContainsKey(Placeholder))
+                return dict[Placeholder];
             return null;
+        }
+        /// <summary>
+        /// Gets the placeholder for a given parameter name
+        /// </summary>
+        /// <param name="ParameterName">The parameter name in the query string.</param>
+        /// <returns></returns>
+        public string GetPlaceholder(string ParameterName) {
+            return dict.Where(kvp => kvp.Value.Equals(ParameterName, StringComparison.InvariantCultureIgnoreCase)).SingleOrDefault().Key;
         }
         /// <summary>
         /// Gets the http verb

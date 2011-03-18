@@ -11,7 +11,7 @@ namespace JsonWebService {
     /// Abstract class for json based web services.
     /// </summary>
     public abstract class JsonService {
-        IEnumerable<JsonMethod> methods;
+        IEnumerable<ServiceBridge> methods;
         HttpListener listener;
 
         public JsonService() {
@@ -70,7 +70,7 @@ namespace JsonWebService {
             methods = from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
                       let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
                       where attribs.Count() > 0
-                      select new JsonMethod {
+                      select new ServiceBridge {
                           MethodInfo = (MethodInfo)mi,
                           Attribute = attribs.Single()
                       };
@@ -83,7 +83,7 @@ namespace JsonWebService {
             }
         }
         void ProcessRequest(HttpListenerContext Context) {
-            JsonMethod m = methods.Where(jm => jm.IsMatch(Context.Request.Url.LocalPath)).FirstOrDefault();
+            ServiceBridge m = methods.Where(jm => jm.IsMatch(Context.Request.Url.LocalPath)).FirstOrDefault();
             
             if(Authorize && !AuthorizeRequest(Context.Request)) {
                 Log("Unauthorized request");
@@ -106,18 +106,23 @@ namespace JsonWebService {
                     Respond(Context.Response, InvalidVerb());
                 } else {
                     try {
-                        object o = GetType().InvokeMember(
+                        var args = m.MapParameters(Context.Request.QueryString);
+
+                        object result = GetType().InvokeMember(
                             name: m.MethodInfo.Name,
                             invokeAttr: Flags,
                             binder: Type.DefaultBinder,
                             target: this,
-                            args: m.GetArgs(Context.Request.QueryString)
+                            args: args.Item1,
+                            modifiers: null,
+                            culture: null,
+                            namedParameters: args.Item2
                         );
 
                         Log("Valid request, response returned");
-                        Respond(Context.Response, o);
+                        Respond(Context.Response, result);
                     } catch(ArgumentException ae) {
-                        Log("Parameter value invalid");
+                        Log("Parameter value missing or invalid");
                         Respond(Context.Response, ParameterFailure(ae.InnerException.Message, ae.ParamName));
                     } catch(Exception e) {
                         Log("Failure to execute method");
@@ -151,17 +156,15 @@ namespace JsonWebService {
         object Describe() {
             Uri absUri = null;
             return (from m in methods
-                    let ps = m.MethodInfo.GetParameters()
                     let b = !string.IsNullOrWhiteSpace(m.Attribute.Example) && Uri.TryCreate(Uri, m.Attribute.Example, out absUri)
                     select new {
                         path = m.Attribute.Path,
                         desc = m.Attribute.Description,
-                        parameters = from ph in m.Attribute.Placeholders
-                                     let k = m.Attribute.GetKey(ph)
-                                     let p = ps.Single(pi => pi.Name == ph)
+                        parameters = from pn in m.Attribute.ParameterNames
+                                     let p = m.GetParameterInfo(pn)
                                      let r = p.DefaultValue == System.DBNull.Value
                                      select new {
-                                         name = k,
+                                         name = pn,
                                          type = p.ParameterType.Name.ToLower(),
                                          required = r,
                                          @default = r ? null : p.DefaultValue
