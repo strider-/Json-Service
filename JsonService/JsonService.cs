@@ -35,11 +35,11 @@ namespace JsonWebService {
         public void Start(bool OpenBrowser) {
             if(!listener.IsListening) {
                 InitService();
-                Log("Server started @ " + Url);
+                Log("Server started @ " + Uri.AbsoluteUri);
                 listener.Start();
                 listener.BeginGetContext(NewRequest, null);
                 if(OpenBrowser)
-                    System.Diagnostics.Process.Start(Url);
+                    System.Diagnostics.Process.Start(Uri.AbsoluteUri);
             }
         }
         /// <summary>
@@ -48,7 +48,7 @@ namespace JsonWebService {
         public void Stop() {
             if(listener.IsListening) {
                 listener.Stop();
-                Url = null;
+                Uri = null;
                 Log("Server stopped");
             }
         }
@@ -64,7 +64,7 @@ namespace JsonWebService {
             Log("Initializing server");
             listener.Prefixes.Clear();
             listener.Prefixes.Add(string.Format("http://{0}:{1}/", this.Host, this.Port));
-            Url = listener.Prefixes.First().Replace("+", "localhost");
+            Uri = new System.Uri(listener.Prefixes.First().Replace("+", "localhost"));
 
             Log("Obtaining service method information");
             methods = from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
@@ -152,7 +152,7 @@ namespace JsonWebService {
             Uri absUri = null;
             return (from m in methods
                     let ps = m.MethodInfo.GetParameters()
-                    let b = !string.IsNullOrWhiteSpace(m.Attribute.Example) && Uri.TryCreate(new Uri(Url), m.Attribute.Example, out absUri)
+                    let b = !string.IsNullOrWhiteSpace(m.Attribute.Example) && Uri.TryCreate(Uri, m.Attribute.Example, out absUri)
                     select new {
                         path = m.Attribute.Path,
                         desc = m.Attribute.Description,
@@ -253,9 +253,9 @@ namespace JsonWebService {
             set;
         }
         /// <summary>
-        /// Gets the url the service is listening on
+        /// Gets the URI the service is listening on
         /// </summary>
-        public string Url {
+        public Uri Uri {
             get;
             private set;
         }

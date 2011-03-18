@@ -16,11 +16,12 @@ namespace Testing {
     }
 
     class TestService : JsonService {
-        [Get("/")]
+        [Get("/", Description = "Service status OK!", Example = "/")]
         public object Root() {
             return new {
                 status = "ok",
-                message = "server is up and running!"
+                message = "service is up and running!",
+                helpurl = Uri.AbsoluteUri + "help"
             };
         }
     }
