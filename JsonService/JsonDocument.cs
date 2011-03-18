@@ -138,10 +138,11 @@ namespace JsonWebService {
 
             return sb.ToString();
         }
-        string getJsonObject(object obj, int tabCount) {
+        string getJsonObject(object obj, int tabCount) {            
             StringBuilder sb = new StringBuilder();
+            List<string> entries = new List<string>();
             string tab = tabString(tabCount);
-
+            
             sb.AppendFormat("{{{0}", newLine);
 
             if(obj != null) {
@@ -150,13 +151,12 @@ namespace JsonWebService {
                     var value = pi[i].GetValue(obj, null);
                     if(obj.Equals(value))
                         continue;
-                    sb.AppendFormat("{0}\"{1}\": ", tab, pi[i].Name);
-                    sb.Append(getJsonValue(value, tabCount));
-                    sb.Append(i < pi.Length - 1 ? "," : "");
-                    sb.Append(newLine);
+
+                    entries.Add(string.Format("{0}\"{1}\": {2}", tab, pi[i].Name, getJsonValue(value, tabCount)));
                 }
             }
 
+            sb.Append(string.Join(string.Format(",{0}", newLine), entries));
             sb.AppendFormat("{0}}}", tabString(tabCount - 1));
 
             return sb.ToString();
