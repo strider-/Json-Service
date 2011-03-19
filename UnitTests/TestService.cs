@@ -29,7 +29,7 @@ namespace UnitTests {
             };
         }
 
-        [Post("save?id={id}", Description = "Updates a record.", Example = "save?id=0", PostedDocument="document")]
+        [Post("save?id={id}", Description = "Updates a record.", Example = "save?id=0", PostedDocument = "document")]
         public object Update(int id, dynamic document) {
             return new {
                 status = "ok",
