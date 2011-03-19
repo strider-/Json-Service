@@ -21,7 +21,7 @@ namespace Testing {
             return new {
                 status = "ok",
                 message = "service is up and running!",
-                helpurl = AllowDescribe ? Uri.AbsoluteUri + "help" : null
+                helpurl = DescriptionUri == null ? null : DescriptionUri.AbsoluteUri
             };
         }
     }

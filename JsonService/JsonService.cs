@@ -19,6 +19,7 @@ namespace JsonWebService {
             this.Port = 5678;
             this.Authorize = false;
             this.AllowDescribe = true;
+            this.DescribePath = "/help";
             this.LogOutput = Console.Out;
             this.listener = new HttpListener();
         }
@@ -34,10 +35,17 @@ namespace JsonWebService {
         /// </summary>
         public void Start(bool OpenBrowser) {
             if(!listener.IsListening) {
-                InitService();
-                Log("Server started @ " + Uri.AbsoluteUri);
+                InitService();                
+                
                 listener.Start();
-                listener.BeginGetContext(NewRequest, null);
+                listener.BeginGetContext(NewRequest, null);                
+                Log("Server started @ " + Uri.AbsoluteUri);
+                
+                if(AllowDescribe && DescriptionUri != null)
+                    Log("Service description @ " + DescriptionUri.AbsoluteUri);
+                else
+                    Log("Service description is not available.");
+
                 if(OpenBrowser)
                     System.Diagnostics.Process.Start(Uri.AbsoluteUri);
             }
@@ -65,7 +73,7 @@ namespace JsonWebService {
             listener.Prefixes.Clear();
             listener.Prefixes.Add(string.Format("http://{0}:{1}/", this.Host, this.Port));
             Uri = new System.Uri(listener.Prefixes.First().Replace("+", "localhost"));
-            
+
             Log("Obtaining service method information");
             methods = from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
                       let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
@@ -74,6 +82,12 @@ namespace JsonWebService {
                           MethodInfo = mi,
                           Attribute = attribs.Single()
                       };
+            
+            if(AllowDescribe) {
+                Uri temp;
+                if(Uri.TryCreate(Uri, DescribePath, out temp))
+                    DescriptionUri = temp;
+            }
         }
         void NewRequest(IAsyncResult Result) {
             if(listener.IsListening) {
@@ -83,44 +97,46 @@ namespace JsonWebService {
             }
         }
         void ProcessRequest(HttpListenerContext Context) {
-            ServiceBridge m = methods.Where(jm => jm.IsMatch(Context.Request.Url.LocalPath)).FirstOrDefault();
-            
-            if(Authorize && !AuthorizeRequest(Context.Request)) {                
-                Respond(Context.Response, Unauthorized());
+            var Request = Context.Request;
+            var Response = Context.Response;
+            ServiceBridge m = methods.Where(jm => jm.IsMatch(Request.Url.LocalPath)).FirstOrDefault();
+
+            if(Authorize && !AuthorizeRequest(Request)) {                
+                Respond(Response, Unauthorized());
                 Log("Unauthorized request");
                 return;
             }
 
-            if(AllowDescribe && Context.Request.Url.LocalPath.Equals("/help", StringComparison.InvariantCultureIgnoreCase)) {                
-                Respond(Context.Response, Describe());
+            if(AllowDescribe && DescriptionUri != null && Request.Url.LocalPath.Equals(DescriptionUri.LocalPath, StringComparison.InvariantCultureIgnoreCase)) {                
+                Respond(Response, Describe());
                 Log("Describing service");
                 return;
             } 
 
             if(m == null) {                
-                Respond(Context.Response, NoMatchingMethod());
+                Respond(Response, NoMatchingMethod());
                 Log("No suitable method found");
             } else {
-                if(!Context.Request.HttpMethod.Equals(m.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {                    
-                    Respond(Context.Response, InvalidVerb());
+                if(!Request.HttpMethod.Equals(m.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {                    
+                    Respond(Response, InvalidVerb());
                     Log("Invalid HTTP verb");
                 } else {
                     try {
                         dynamic postedDoc = null;
 
-                        if(Context.Request.HasEntityBody) {
+                        if(Request.HasEntityBody) {
                             try {
-                                using(StreamReader sr = new StreamReader(Context.Request.InputStream)) {
+                                using(StreamReader sr = new StreamReader(Request.InputStream)) {
                                     postedDoc = JsonDocument.Parse(sr.ReadToEnd());
                                 }
                             } catch {
-                                Respond(Context.Response, InvalidJsonPosted());
+                                Respond(Response, InvalidJsonPosted());
                                 Log("Data posted to the server was not valid json");
                                 return;
                             }
                         }
 
-                        var args = m.MapParameters(Context.Request.QueryString, postedDoc);
+                        var args = m.MapParameters(Request.QueryString, postedDoc);
                         
                         object result = GetType().InvokeMember(
                             name: m.MethodInfo.Name,
@@ -133,13 +149,13 @@ namespace JsonWebService {
                             namedParameters: args.Item2
                         );
                         
-                        Respond(Context.Response, result);
+                        Respond(Response, result);
                         Log(string.Format("Invoked {0}.{1}({2})", m.MethodInfo.DeclaringType.Name, m.MethodInfo.Name, string.Join(", ", args.Item3)));
                     } catch(ArgumentException ae) {                        
-                        Respond(Context.Response, ParameterFailure(ae.InnerException.Message, ae.ParamName));
+                        Respond(Response, ParameterFailure(ae.InnerException.Message, ae.ParamName));
                         Log("Parameter value missing or invalid");
                     } catch(Exception e) {                        
-                        Respond(Context.Response, CallFailure(e.Message));
+                        Respond(Response, CallFailure(e.Message));
                         Log("Failure to execute method");
                     }
                 }
@@ -280,9 +296,23 @@ namespace JsonWebService {
             set;
         }
         /// <summary>
+        /// Gets and sets the path for service description. Defaults to '/help'
+        /// </summary>
+        public string DescribePath {
+            get;
+            set;
+        }
+        /// <summary>
         /// Gets the URI the service is listening on
         /// </summary>
         public Uri Uri {
+            get;
+            private set;
+        }
+        /// <summary>
+        /// Gets the uri where the service will describe itself
+        /// </summary>
+        public Uri DescriptionUri {
             get;
             private set;
         }
@@ -295,14 +325,14 @@ namespace JsonWebService {
             set;
         }
         /// <summary>
-        /// Gets and sets whether or not to allow the service to describe its methods to a client by requesting '/help'
+        /// Gets and sets whether or not to allow the service to describe its methods to a client by requesting the path specified in DescribePath.
         /// </summary>
         public bool AllowDescribe {
             get;
             set;
         }
         /// <summary>
-        /// Gets and sets the output for logging
+        /// Gets and sets the output for logging. Defaults to the console
         /// </summary>
         public TextWriter LogOutput {
             get;
