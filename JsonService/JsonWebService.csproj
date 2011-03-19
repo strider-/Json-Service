@@ -40,7 +40,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Attributes.cs" />
+    <Compile Include="GetAttribute.cs" />
+    <Compile Include="PostAttribute.cs" />
+    <Compile Include="VerbAttribute.cs" />
     <Compile Include="JsonDocument.cs" />
     <Compile Include="JsonDynamicDocument.cs" />
     <Compile Include="ServiceBridge.cs" />

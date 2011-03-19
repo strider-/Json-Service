@@ -95,39 +95,5 @@ namespace JsonWebService {
         public abstract string Verb {
             get;
         }
-    }
-
-    /// <summary>
-    /// Represents the GET http verb for json service requests.
-    /// </summary>
-    public class GetAttribute : VerbAttribute {
-        public GetAttribute(string UriTemplate)
-            : base(UriTemplate) {
-        }
-        /// <summary>
-        /// Gets the http verb (GET)
-        /// </summary>
-        public override string Verb {
-            get {
-                return "GET";
-            }
-        }
-    }
-
-    /// <summary>
-    /// Represents the POST http verb for json service requests.
-    /// </summary>
-    public class PostAttribute : VerbAttribute {
-        public PostAttribute(string UriTemplate)
-            : base(UriTemplate) {
-        }
-        /// <summary>
-        /// Gets the http verb (POST)
-        /// </summary>
-        public override string Verb {
-            get {
-                return "POST";
-            }
-        }
-    }    
+    }  
 }

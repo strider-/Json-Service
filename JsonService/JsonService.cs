@@ -106,8 +106,22 @@ namespace JsonWebService {
                     Log("Invalid HTTP verb");
                 } else {
                     try {
-                        var args = m.MapParameters(Context.Request.QueryString);
+                        dynamic postedDoc = null;
 
+                        if(Context.Request.HasEntityBody) {
+                            try {
+                                using(StreamReader sr = new StreamReader(Context.Request.InputStream)) {
+                                    postedDoc = JsonDocument.Parse(sr.ReadToEnd());
+                                }
+                            } catch {
+                                Respond(Context.Response, InvalidJsonPosted());
+                                Log("Data posted to the server was not valid json");
+                                return;
+                            }
+                        }
+
+                        var args = m.MapParameters(Context.Request.QueryString, postedDoc);
+                        
                         object result = GetType().InvokeMember(
                             name: m.MethodInfo.Name,
                             invokeAttr: Flags,
@@ -118,7 +132,7 @@ namespace JsonWebService {
                             culture: null,
                             namedParameters: args.Item2
                         );
-
+                        
                         Respond(Context.Response, result);
                         Log(string.Format("Invoked {0}.{1}({2})", m.MethodInfo.DeclaringType.Name, m.MethodInfo.Name, string.Join(", ", args.Item3)));
                     } catch(ArgumentException ae) {                        
@@ -233,6 +247,16 @@ namespace JsonWebService {
             return new {
                 status = "failed",
                 error = "Missing or invalid authorization key."
+            };
+        }
+        /// <summary>
+        /// Returns the json for an invalid posted json document.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual object InvalidJsonPosted() {
+            return new {
+                status = "failed",
+                message = "json posted to the server was invalid."
             };
         }
 

@@ -44,20 +44,23 @@ namespace JsonWebService {
         /// </summary>
         /// <param name="qs">Query string the client passed in.</param>
         /// <returns>Item1: parameter values, Item2: parameter names, Item3: logging strings</returns>
-        public Tuple<object[], string[], string[]> MapParameters(System.Collections.Specialized.NameValueCollection qs) {
+        public Tuple<object[], string[], string[]> MapParameters(System.Collections.Specialized.NameValueCollection qs, dynamic postedDocument) {
             var parms = MethodInfo.GetParameters().OrderBy(p => p.Position).ToArray();
             var result = Tuple.Create(
                 new object[parms.Length],
                 parms.Select(p => p.Name).ToArray(),
                 new string[parms.Length]
             );
-
+            
             for(int i = 0; i < parms.Length; i++) {
                 var pm = parms[i];
                 bool hasDefault = pm.DefaultValue != System.DBNull.Value;
                 string key = Attribute.GetParameterName(pm.Name);
 
-                if(!qs.AllKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase) && !hasDefault) {
+                if(key == null && Attribute is PostAttribute) {
+                    if(pm.Name.Equals(((PostAttribute)Attribute).PostedDocument))
+                        result.Item1[i] = postedDocument;
+                } else if(!qs.AllKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase) && !hasDefault) {
                     throw new ArgumentException(key + " is required.", key, new Exception("Missing required parameter"));
                 } else {
                     string val = qs[key];
@@ -66,7 +69,7 @@ namespace JsonWebService {
                         result.Item1[i] = pm.DefaultValue;
                     } else {
                         try {
-                            result.Item1[i] = Convert.ChangeType(val, pm.ParameterType);                            
+                            result.Item1[i] = Convert.ChangeType(val, pm.ParameterType);
                         } catch(Exception e) {
                             throw new ArgumentException("Failed to convert input to required type", key, e);
                         }

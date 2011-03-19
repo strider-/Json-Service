@@ -34,8 +34,8 @@ namespace UnitTests {
             return JsonDocument.Parse(raw);
         }
 
-        public dynamic PostDocument(string RelativeUrl) {
-            string raw = wc.UploadString(ts.Uri.AbsoluteUri + RelativeUrl, "POST", string.Empty);
+        public dynamic PostDocument(string RelativeUrl, string JsonToPost) {
+            string raw = wc.UploadString(ts.Uri.AbsoluteUri + RelativeUrl, "POST", JsonToPost);
             return JsonDocument.Parse(raw);
         }
 
@@ -128,7 +128,7 @@ namespace UnitTests {
 
         [TestMethod]
         public void HttpVerbAccept() {
-            dynamic doc = PostDocument("save?id=1");
+            dynamic doc = PostDocument("save?id=1", string.Empty);
 
             Assert.IsTrue(doc.status == "ok");
         }
@@ -145,6 +145,22 @@ namespace UnitTests {
             dynamic doc = GetDocument("mult?value2=3");
 
             Assert.IsTrue(doc.product == 0);
+        }
+
+        [TestMethod]
+        public void PostingJsonDocument() {
+            dynamic doc = PostDocument("save?id=2", "{ \"name\": \"Mike\", \"age\": 31 }");
+
+            Assert.IsTrue(doc.status == "ok");
+            Assert.IsTrue(doc.name == "Mike");
+            Assert.IsTrue(doc.age == 31);
+        }
+
+        [TestMethod]
+        public void InvalidJsonPosted() {
+            dynamic doc = PostDocument("save?id=3", "{ not valid json }");
+
+            Assert.IsTrue(doc.status == "failed");
         }
 
         private TestContext testContextInstance;

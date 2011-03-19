@@ -4,8 +4,30 @@ public class MyService : JsonService {
    [Get("/")]
    public object Root() {
       return new {
-         status = "ok,
+         status = "ok",
          message = "service is running!"
+      }
+   }
+
+   [Get("greet?person={name}")]
+   public object Greet(string name) {
+      return new {
+         greeting = "Greetings, " + name + "!"
+      }
+   }
+ 
+   [Post("save", PostedDocument="doc")]
+   public object Update(dynamic doc) {
+      if(doc != null) {
+         return new {
+            status = "ok",
+            message = "document accepted"
+         }
+      } else {
+         return new {
+            status = "failed",
+            message = "no json document was posted!"
+         }
       }
    }
 }
