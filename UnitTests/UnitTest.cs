@@ -163,6 +163,22 @@ namespace UnitTests {
             Assert.IsTrue(doc.status == "failed");
         }
 
+        [TestMethod]
+        public void CustomDescriptionPath() {
+            ts.Stop();
+            ts.DescribePath = "/I/Need/Help";
+            ts.AllowDescribe = true;
+            ts.Start(false);
+
+            dynamic doc = GetDocument("I/Need/Help");
+
+            Assert.IsFalse(doc.status == "failed");
+
+            ts.Stop();
+            ts.DescribePath = "/help";
+            ts.Start(false);
+        }
+
         private TestContext testContextInstance;
 
         /// <summary>

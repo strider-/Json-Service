@@ -57,6 +57,7 @@ namespace JsonWebService {
             if(listener.IsListening) {
                 listener.Stop();
                 Uri = null;
+                DescriptionUri = null;
                 Log("Server stopped");
             }
         }
@@ -310,7 +311,7 @@ namespace JsonWebService {
             private set;
         }
         /// <summary>
-        /// Gets the uri where the service will describe itself
+        /// Gets the uri where the service will describe itself.
         /// </summary>
         public Uri DescriptionUri {
             get;
