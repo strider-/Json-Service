@@ -43,11 +43,12 @@ namespace JsonWebService {
         /// Maps query string values to the service method parameters.
         /// </summary>
         /// <param name="qs">Query string the client passed in.</param>
-        /// <returns></returns>
-        public Tuple<object[], string[]> MapParameters(System.Collections.Specialized.NameValueCollection qs) {
-            var parms = MethodInfo.GetParameters().ToArray();
-            Tuple<object[], string[]> result = new Tuple<object[], string[]>(
+        /// <returns>Item1: parameter values, Item2: parameter names, Item3: logging strings</returns>
+        public Tuple<object[], string[], string[]> MapParameters(System.Collections.Specialized.NameValueCollection qs) {
+            var parms = MethodInfo.GetParameters().OrderBy(p => p.Position).ToArray();
+            var result = Tuple.Create(
                 new object[parms.Length],
+                parms.Select(p => p.Name).ToArray(),
                 new string[parms.Length]
             );
 
@@ -55,7 +56,6 @@ namespace JsonWebService {
                 var pm = parms[i];
                 bool hasDefault = pm.DefaultValue != System.DBNull.Value;
                 string key = Attribute.GetParameterName(pm.Name);
-                result.Item2[i] = pm.Name;
 
                 if(!qs.AllKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase) && !hasDefault) {
                     throw new ArgumentException(key + " is required.", key, new Exception("Missing required parameter"));
@@ -66,11 +66,13 @@ namespace JsonWebService {
                         result.Item1[i] = pm.DefaultValue;
                     } else {
                         try {
-                            result.Item1[i] = Convert.ChangeType(val, pm.ParameterType);
+                            result.Item1[i] = Convert.ChangeType(val, pm.ParameterType);                            
                         } catch(Exception e) {
                             throw new ArgumentException("Failed to convert input to required type", key, e);
                         }
                     }
+
+                    result.Item3[i] = string.Format("{0}={1}", result.Item2[i], result.Item1[i]);
                 }
             }
 

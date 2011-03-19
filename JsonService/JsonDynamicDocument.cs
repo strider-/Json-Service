@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace JsonWebService {
     /// <summary>
-    /// A dynamic object that represents a json document
+    /// A dynamic object that represents a json document, parsed from JsonDocument.Parse
     /// </summary>
     public class JsonDynamicDocument : DynamicObject {
         object obj;

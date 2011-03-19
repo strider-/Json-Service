@@ -85,25 +85,25 @@ namespace JsonWebService {
         void ProcessRequest(HttpListenerContext Context) {
             ServiceBridge m = methods.Where(jm => jm.IsMatch(Context.Request.Url.LocalPath)).FirstOrDefault();
             
-            if(Authorize && !AuthorizeRequest(Context.Request)) {
-                Log("Unauthorized request");
+            if(Authorize && !AuthorizeRequest(Context.Request)) {                
                 Respond(Context.Response, Unauthorized());
+                Log("Unauthorized request");
                 return;
             }
 
-            if(AllowDescribe && Context.Request.Url.LocalPath.Equals("/help", StringComparison.InvariantCultureIgnoreCase)) {
-                Log("Describing service.");
+            if(AllowDescribe && Context.Request.Url.LocalPath.Equals("/help", StringComparison.InvariantCultureIgnoreCase)) {                
                 Respond(Context.Response, Describe());
+                Log("Describing service");
                 return;
             } 
 
-            if(m == null) {
-                Log("No suitable method found");
+            if(m == null) {                
                 Respond(Context.Response, NoMatchingMethod());
+                Log("No suitable method found");
             } else {
-                if(!Context.Request.HttpMethod.Equals(m.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {
-                    Log("Invalid HTTP verb");
+                if(!Context.Request.HttpMethod.Equals(m.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {                    
                     Respond(Context.Response, InvalidVerb());
+                    Log("Invalid HTTP verb");
                 } else {
                     try {
                         var args = m.MapParameters(Context.Request.QueryString);
@@ -119,14 +119,14 @@ namespace JsonWebService {
                             namedParameters: args.Item2
                         );
 
-                        Log("Valid request, response returned");
                         Respond(Context.Response, result);
-                    } catch(ArgumentException ae) {
-                        Log("Parameter value missing or invalid");
+                        Log(string.Format("Invoked {0}.{1}({2})", m.MethodInfo.DeclaringType.Name, m.MethodInfo.Name, string.Join(", ", args.Item3)));
+                    } catch(ArgumentException ae) {                        
                         Respond(Context.Response, ParameterFailure(ae.InnerException.Message, ae.ParamName));
-                    } catch(Exception e) {
-                        Log("Failure to execute method");
+                        Log("Parameter value missing or invalid");
+                    } catch(Exception e) {                        
                         Respond(Context.Response, CallFailure(e.Message));
+                        Log("Failure to execute method");
                     }
                 }
             }

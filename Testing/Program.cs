@@ -21,8 +21,14 @@ namespace Testing {
             return new {
                 status = "ok",
                 message = "service is up and running!",
-                helpurl = Uri.AbsoluteUri + "help",
-                date = DateTime.Now
+                helpurl = AllowDescribe ? Uri.AbsoluteUri + "help" : null
+            };
+        }
+
+        [Get("add?value1={a}&value2={b}", Description = "Returns the sum of 2 numbers.", Example = "add?value1=3&value2=5")]
+        public object Sum(int a, int b) {
+            return new {
+                sum = a + b
             };
         }
     }
