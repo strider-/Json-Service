@@ -18,12 +18,13 @@ namespace JsonWebService {
         /// <param name="UriTemplate">Sets the template for a service method call</param>
         public VerbAttribute(string UriTemplate) {
             this.Description = string.Empty;
-            this.UriTemplate = UriTemplate;
+            this.UriTemplate = UriTemplate.StartsWith("/") ? UriTemplate : "/" + UriTemplate;
             MatchCollection mc = Regex.Matches(this.UriTemplate, REGEX, RegexOptions.Singleline);
 
-            Path = Regex.Split(UriTemplate, REGEX)[0].TrimEnd('?');
-            if(!Path.StartsWith("/"))
-                Path = "/" + Path;
+            if(this.UriTemplate.Contains('?'))
+                Path = this.UriTemplate.Substring(0, this.UriTemplate.IndexOf('?'));
+            else
+                Path = this.UriTemplate;
 
             dict = mc.OfType<Match>().ToDictionary(k => k.Groups["Value"].Value, v => v.Groups["Key"].Value);
         }

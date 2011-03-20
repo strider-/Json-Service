@@ -29,6 +29,23 @@ namespace UnitTests {
             };
         }
 
+        [Get("/slashprefix", Description = "Leading slash check", Example = "/slashprefix")]
+        public object Slash() {
+            return new {
+                status = "ok",
+                message = "lead with a slash or don't."
+            };
+        }
+
+        [Get("i/am/a/multipart/path?with={vars}", Description = "Mutipart path testing", Example = "i/am/a/multipart/path?with=vars")]
+        public object PathCheck(string vars) {
+            return new {
+                status = "ok",
+                message = "multi-part paths are a-ok",
+                vars = vars
+            };
+        }
+
         [Post("save?id={id}", Description = "Updates a record.", Example = "save?id=0", PostedDocument = "document")]
         public object Update(int id, dynamic document) {
             return new {
