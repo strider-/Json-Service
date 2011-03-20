@@ -1,4 +1,6 @@
 Run a custom json based web service by inheriting the JsonService class.
+The return value (anonymous objects or otherwise) will be properly serialized to json,
+based on the publically visible properies.
 
 public class MyService : JsonService {
    [Get("/")]
@@ -11,9 +13,9 @@ public class MyService : JsonService {
 
    [Get("greet?person={name}")]
    public object Greet(string name) {
-      return new {
-         greeting = "Greetings, " + name + "!"
-      }
+      Greeter g = new Greeter(name);
+
+	  return g;
    }
  
    [Post("save", PostedDocument="doc")]

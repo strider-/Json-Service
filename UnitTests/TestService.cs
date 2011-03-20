@@ -56,6 +56,26 @@ namespace UnitTests {
             };
         }
 
+        [Get("/customobj", Description = "Returns an object serialized to json", Example = "/customobj")]
+        public object CustomObject() {
+            CustomObject obj = new CustomObject {
+                A = "Testing",
+                B = "Obj",
+                C = 1980,
+                D = new string[] { "I", "II", "III", "IV", "V" },
+                E = new CustomObject {
+                    A = "B should be null.",
+                    D = new string[] { "1", "2", "3", "4", "5" },
+                    F = true
+                },
+                F = false,
+                G = 3.14f,
+                H = '!'
+            };
+
+            return obj;
+        }
+
         protected override bool AuthorizeRequest(System.Net.HttpListenerRequest Request) {
             return Request.QueryString["apikey"] != null;
         }

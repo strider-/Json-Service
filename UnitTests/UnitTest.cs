@@ -225,6 +225,20 @@ namespace UnitTests {
             ts.Start(false);
         }
 
+        [TestMethod]
+        public void ObjectSerialization() {
+            // You don't have to return an anonymous object, whatever object returned should be properly serialized to json.
+            dynamic doc = GetDocument("customobj");
+
+            Assert.IsFalse(doc.status == "failed");
+            Assert.IsTrue(doc.A == "Testing");
+            Assert.IsTrue(doc.C == 1980);
+            Assert.IsTrue(doc.D[2] == "III");
+            Assert.IsFalse(doc.F);
+            Assert.IsNull(doc.E.B);
+            Assert.IsTrue(doc.E.F);
+        }
+
         private TestContext testContextInstance;
 
         /// <summary>
