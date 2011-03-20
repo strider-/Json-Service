@@ -76,6 +76,11 @@ namespace UnitTests {
             return obj;
         }
 
+        [Get("/statuscode", Description = "Returning a custom status code", Example = "/statuscode")]
+        public object StatusCode() {
+            return WithStatusCode(null, System.Net.HttpStatusCode.NotImplemented);
+        }
+
         protected override bool AuthorizeRequest(System.Net.HttpListenerRequest Request) {
             return Request.QueryString["apikey"] != null;
         }

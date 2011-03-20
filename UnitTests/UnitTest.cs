@@ -239,6 +239,16 @@ namespace UnitTests {
             Assert.IsTrue(doc.E.F);
         }
 
+        [TestMethod]
+        public void CustomStatusCode() {
+            try {
+                dynamic doc = GetDocument("statuscode");
+                Assert.Fail();
+            } catch(WebException e) {
+                Assert.IsTrue(((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotImplemented);
+            }            
+        }
+
         private TestContext testContextInstance;
 
         /// <summary>

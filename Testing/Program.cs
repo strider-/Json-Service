@@ -24,6 +24,7 @@ namespace Testing {
                 helpurl = DescriptionUri == null ? null : DescriptionUri.AbsoluteUri
             };
         }
+
         [Get("add?value1={a}&value2={b}", Description = "Returns the sum of 2 numbers.", Example = "add?value1=3&value2=5")]
         public object Sum(int a, int b) {
             return new {

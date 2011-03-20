@@ -35,8 +35,8 @@ namespace JsonWebService {
         /// </summary>
         public void Start(bool OpenBrowser) {
             if(!listener.IsListening) {
-                InitService();                
-                
+                InitService();
+
                 listener.Start();
                 listener.BeginGetContext(NewRequest, null);                
                 Log("Server started @ " + Uri.AbsoluteUri);
@@ -100,6 +100,13 @@ namespace JsonWebService {
         void ProcessRequest(HttpListenerContext Context) {
             var Request = Context.Request;
             var Response = Context.Response;
+            
+            if(methods.Count() == 0) {
+                Respond(Response, NoExposedMethods());
+                Log("There are no methods exposed by this service!");
+                return;
+            }
+
             ServiceBridge m = methods.Where(jm => jm.IsMatch(Request.Url.LocalPath)).FirstOrDefault();
 
             if(Authorize && !AuthorizeRequest(Request)) {                
@@ -139,7 +146,7 @@ namespace JsonWebService {
 
                         var args = m.MapParameters(Request.QueryString, postedDoc);
                         
-                        object result = GetType().InvokeMember(
+                        var result = GetType().InvokeMember(
                             name: m.MethodInfo.Name,
                             invokeAttr: Flags,
                             binder: Type.DefaultBinder,
@@ -149,7 +156,7 @@ namespace JsonWebService {
                             culture: null,
                             namedParameters: args.Item2
                         );
-                        
+
                         Respond(Response, result);
                         Log(string.Format("Invoked {0}.{1}({2})", m.MethodInfo.DeclaringType.Name, m.MethodInfo.Name, string.Join(", ", args.Item3)));
                     } catch(ArgumentException ae) {           
@@ -163,12 +170,23 @@ namespace JsonWebService {
             }
         }
         void Respond(HttpListenerResponse Response, object content) {
-            JsonDocument doc = new JsonDocument(content);
+            JsonDocument doc;
+            HttpStatusCode code = HttpStatusCode.OK;      
+
+            var tuple = content as Tuple<object, HttpStatusCode>;
+            if(tuple != null) {
+                doc = new JsonDocument(tuple.Item1);
+                code = tuple.Item2;
+            } else {
+                doc = new JsonDocument(content);
+            }
+
             doc.Formatting = JsonDocument.JsonFormat.None;
             string raw = doc.ToString();
 
             Response.ContentType = "application/json";
             Response.ContentLength64 = raw.Length;
+            Response.StatusCode = (int)code;
             using(StreamWriter sw = new StreamWriter(Response.OutputStream)) {
                 sw.Write(raw);
             }
@@ -204,6 +222,25 @@ namespace JsonWebService {
                     }).ToArray();
         }
 
+        /// <summary>
+        /// Returns data to the client with the given HttpStatusCode
+        /// </summary>
+        /// <param name="obj">Object to return, can be null</param>
+        /// <param name="code">Status code for the client</param>
+        /// <returns></returns>
+        protected object WithStatusCode(object obj, HttpStatusCode code) {
+            return Tuple.Create(obj, code);
+        }
+        /// <summary>
+        /// Returns the json for when the service has no publically available methods
+        /// </summary>
+        /// <returns></returns>
+        protected virtual object NoExposedMethods() {
+            return new {
+                status = "failed",
+                error = "This service is not exposing any methods!"
+            };
+        }
         /// <summary>
         /// Performs authorization &amp; returns a boolean representing the result.
         /// </summary>
