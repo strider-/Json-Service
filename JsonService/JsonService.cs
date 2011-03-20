@@ -152,11 +152,11 @@ namespace JsonWebService {
                         
                         Respond(Response, result);
                         Log(string.Format("Invoked {0}.{1}({2})", m.MethodInfo.DeclaringType.Name, m.MethodInfo.Name, string.Join(", ", args.Item3)));
-                    } catch(ArgumentException ae) {                        
-                        Respond(Response, ParameterFailure(ae.InnerException.Message, ae.ParamName));
+                    } catch(ArgumentException ae) {           
+                        Respond(Response, ParameterFailure(ae));
                         Log("Parameter value missing or invalid");
                     } catch(Exception e) {                        
-                        Respond(Response, CallFailure(e.Message));
+                        Respond(Response, CallFailure(e));
                         Log("Failure to execute method");
                     }
                 }
@@ -225,14 +225,14 @@ namespace JsonWebService {
         /// <summary>
         /// Returns the json for an error when a parameter value is invalid.
         /// </summary>
-        /// <param name="Message">Exception message</param>
-        /// <param name="ParameterName">Parameter name</param>
-        /// <returns></returns>
-        protected virtual object ParameterFailure(string Message, string ParameterName) {
+        /// <param name="exception">The argument exception thrown.  The Data property will contain 2 entries; value &amp; expected_type</param>
+        protected virtual object ParameterFailure(ArgumentException exception) {
             return new {
                 status = "failed",
-                error = Message,
-                parameter = ParameterName
+                error = exception.Message,
+                parameter = exception.ParamName,
+                value = exception.Data["value"],
+                expected_type = ((Type)exception.Data["expected_type"]).Name.ToLower()
             };
         }
         /// <summary>
@@ -240,10 +240,10 @@ namespace JsonWebService {
         /// </summary>
         /// <param name="Message">Exception message</param>
         /// <returns></returns>        
-        protected virtual object CallFailure(string Message) {
+        protected virtual object CallFailure(Exception e) {
             return new {
                 status = "failed",
-                error = Message
+                error = e.Message
             };
         }
         /// <summary>

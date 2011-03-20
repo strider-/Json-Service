@@ -51,7 +51,7 @@ namespace JsonWebService {
                 parms.Select(p => p.Name).ToArray(),
                 new string[parms.Length]
             );
-            
+
             for(int i = 0; i < parms.Length; i++) {
                 var pm = parms[i];
                 bool hasDefault = pm.DefaultValue != System.DBNull.Value;
@@ -61,7 +61,10 @@ namespace JsonWebService {
                     if(pm.Name.Equals(((PostAttribute)Attribute).PostedDocument))
                         result.Item1[i] = postedDocument;
                 } else if(!qs.AllKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase) && !hasDefault) {
-                    throw new ArgumentException(key + " is required.", key, new Exception("Missing required parameter"));
+                    ArgumentException ae = new ArgumentException(key + " is required.", key, new Exception("Missing required parameter"));
+                    ae.Data["value"] = null;
+                    ae.Data["expected_type"] = pm.ParameterType;
+                    throw ae;
                 } else {
                     string val = qs[key];
 
@@ -71,7 +74,10 @@ namespace JsonWebService {
                         try {
                             result.Item1[i] = Convert.ChangeType(val, pm.ParameterType);
                         } catch(Exception e) {
-                            throw new ArgumentException("Failed to convert input to required type", key, e);
+                            ArgumentException ae = new ArgumentException(string.Format("Cannot convert value '{0}' to {1}", val, pm.ParameterType.Name.ToLower()), key, e);
+                            ae.Data["value"] = val;
+                            ae.Data["expected_type"] = pm.ParameterType;
+                            throw ae;
                         }
                     }
 
