@@ -199,7 +199,7 @@ namespace JsonWebService {
                 return new JsonDynamicDocument(parseObject());
             else if(PeekToken() == JsonToken.OpenBracket)
                 return new JsonDynamicDocument(parseArray());
-
+            
             throw new Exception("Invalid JSON document.");
         }
         void consumeWhiteSpace() {

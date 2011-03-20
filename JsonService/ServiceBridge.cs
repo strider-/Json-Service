@@ -43,6 +43,8 @@ namespace JsonWebService {
         /// Maps query string values to the service method parameters.
         /// </summary>
         /// <param name="qs">Query string the client passed in.</param>
+        /// <param name="postedDocument">The json document posted by the client, if any</param>
+        /// <exception cref="System.ArgumentException">Missing required parameter or parameter is invalid type</exception>
         /// <returns>Item1: parameter values, Item2: parameter names, Item3: logging strings</returns>
         public Tuple<object[], string[], string[]> MapParameters(System.Collections.Specialized.NameValueCollection qs, dynamic postedDocument) {
             var parms = MethodInfo.GetParameters().OrderBy(p => p.Position).ToArray();
@@ -61,10 +63,8 @@ namespace JsonWebService {
                     if(pm.Name.Equals(((PostAttribute)Attribute).PostedDocument))
                         result.Item1[i] = postedDocument;
                 } else if(!qs.AllKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase) && !hasDefault) {
-                    ArgumentException ae = new ArgumentException(key + " is required.", key, new Exception("Missing required parameter"));
-                    ae.Data["value"] = null;
-                    ae.Data["expected_type"] = pm.ParameterType;
-                    throw ae;
+                    
+                    throw ParameterError(string.Format("{0} is required.", key), key, null, pm.ParameterType, new Exception("Missing required parameter"));
                 } else {
                     string val = qs[key];
 
@@ -74,10 +74,7 @@ namespace JsonWebService {
                         try {
                             result.Item1[i] = Convert.ChangeType(val, pm.ParameterType);
                         } catch(Exception e) {
-                            ArgumentException ae = new ArgumentException(string.Format("Cannot convert value '{0}' to {1}", val, pm.ParameterType.Name.ToLower()), key, e);
-                            ae.Data["value"] = val;
-                            ae.Data["expected_type"] = pm.ParameterType;
-                            throw ae;
+                            throw ParameterError(string.Format("Cannot convert value '{0}' to {1}", val, pm.ParameterType.Name.ToLower()), key, val, pm.ParameterType, e);
                         }
                     }
 
@@ -86,6 +83,12 @@ namespace JsonWebService {
             }
 
             return result;
+        }
+        ArgumentException ParameterError(string message, string parameter, object value, Type expected, Exception inner) {
+            ArgumentException ae = new ArgumentException(message, parameter, inner);
+            ae.Data["value"] = value;
+            ae.Data["expected_type"] = expected;
+            return ae;
         }
         /// <summary>
         /// Returns the Uri for an example use, if an example was specified.
