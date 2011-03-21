@@ -223,9 +223,9 @@ namespace JsonWebService {
         }
 
         /// <summary>
-        /// Returns data to the client with the given HttpStatusCode
+        /// Returns a Tuple with the content to send to the client, along with a HttpStatusCode.
         /// </summary>
-        /// <param name="obj">Object to return, can be null</param>
+        /// <param name="obj">Object to return to the client, can be null</param>
         /// <param name="code">Status code for the client</param>
         /// <returns></returns>
         protected object WithStatusCode(object obj, HttpStatusCode code) {
@@ -247,7 +247,7 @@ namespace JsonWebService {
         /// <param name="Request"></param>
         /// <returns></returns>
         protected virtual bool AuthorizeRequest(HttpListenerRequest Request) {
-            return true;
+            return false;
         }
         /// <summary>
         /// Returns the json for when no method exists.

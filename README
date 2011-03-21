@@ -1,35 +1,4 @@
 Run a custom json based web service by inheriting the JsonService class.
-The return value (anonymous objects or otherwise) will be properly serialized to json,
-based on the publically visible properies.
+The return value (anonymous objects or otherwise) will be properly serialized to json, based on the publically visible properies.
 
-public class MyService : JsonService {
-   [Get("/")]
-   public object Root() {
-      return new {
-         status = "ok",
-         message = "service is running!"
-      }
-   }
-
-   [Get("greet?person={name}")]
-   public object Greet(string name) {
-      Greeter g = new Greeter(name);
-
-      return g;
-   }
- 
-   [Post("save", PostedDocument="doc")]
-   public object Update(dynamic doc) {
-      if(doc != null) {
-         return new {
-            status = "ok",
-            message = "document accepted"
-         }
-      } else {
-         return new {
-            status = "failed",
-            message = "no json document was posted!"
-         }
-      }
-   }
-}
+Read the wiki for more details.

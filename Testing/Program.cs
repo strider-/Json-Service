@@ -9,6 +9,7 @@ namespace Testing {
         static void Main(string[] args) {
             TestService ts = new TestService();
             ts.Start(true);
+            
             while(Console.ReadKey(true).Key != ConsoleKey.Escape)
                 ;
             ts.Stop();
@@ -31,5 +32,7 @@ namespace Testing {
                 sum = a + b
             };
         }
+
+        override Un
     }
 }

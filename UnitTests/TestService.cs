@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Net;
 using JsonWebService;
 
 namespace UnitTests {
@@ -78,7 +76,7 @@ namespace UnitTests {
 
         [Get("/statuscode", Description = "Returning a custom status code", Example = "/statuscode")]
         public object StatusCode() {
-            return WithStatusCode(null, System.Net.HttpStatusCode.NotImplemented);
+            return WithStatusCode(null, HttpStatusCode.NotImplemented);
         }
 
         protected override bool AuthorizeRequest(System.Net.HttpListenerRequest Request) {

@@ -241,6 +241,7 @@ namespace UnitTests {
 
         [TestMethod]
         public void CustomStatusCode() {
+            // Status code specifed when using WithStatusCode should be sent to the client
             try {
                 dynamic doc = GetDocument("statuscode");
                 Assert.Fail();
