@@ -8,7 +8,7 @@ namespace Testing {
     class Program {
         static void Main(string[] args) {
             ConsoleService ts = new ConsoleService();
-            ts.Start(true);            
+            ts.Start(true);
             while(Console.ReadKey(true).Key != ConsoleKey.Escape)
                 ;
             ts.Stop();

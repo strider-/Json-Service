@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="GetAttribute.cs" />
     <Compile Include="PostAttribute.cs" />
+    <Compile Include="TemplateCollisionException.cs" />
     <Compile Include="VerbAttribute.cs" />
     <Compile Include="JsonDocument.cs" />
     <Compile Include="JsonDynamicDocument.cs" />

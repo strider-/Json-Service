@@ -27,9 +27,24 @@ namespace JsonWebService {
         /// Returns whether or not this method matches the method that was requested.
         /// </summary>
         /// <param name="path">Path the client requested</param>
+        /// <param name="verb">The http verb used to invoke the method</param>
+        /// <param name="qsKeys">Query string keys the client specified</param>
         /// <returns></returns>
-        public bool IsMatch(string path) {
-            return Attribute.Path.Equals(path, StringComparison.InvariantCultureIgnoreCase);
+        public bool IsMatch(string path, string verb, string[] qsKeys) {
+            return Attribute.Path.Equals(path, StringComparison.InvariantCultureIgnoreCase) &&
+                qsKeys.All(k => Attribute.ParameterNames.Contains(k, StringComparer.InvariantCultureIgnoreCase)) &&
+                Attribute.Verb.Equals(verb, StringComparison.InvariantCultureIgnoreCase);
+        }
+        /// <summary>
+        /// Serves as a hash function to determine template collisions.
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode() {
+            int hash = Attribute.Path.ToLower().GetHashCode();
+            hash ^= Attribute.Verb.ToLower().GetHashCode();
+            for(int i = 0; i < Attribute.ParameterNames.Length; i++)
+                hash ^= Attribute.ParameterNames[i].GetHashCode();
+            return hash;
         }
         /// <summary>
         /// Returns a service method parameter information based on its query string parameter name.

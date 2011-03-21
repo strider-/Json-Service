@@ -27,15 +27,19 @@ namespace JsonWebService {
         /// <summary>
         /// Starts the service, without opening the default browser.
         /// </summary>
+        /// <exception cref="JsonWebService.TemplateCollisionException">thrown if multiple methods have the same VerbAttribute with identical UriTemplates.</exception>
         public void Start() {
             Start(false);
         }
         /// <summary>
         /// Starts the service, with the option to open the default browser.
         /// </summary>
+        /// <exception cref="JsonWebService.TemplateCollisionException">thrown if multiple methods have the same VerbAttribute with identical UriTemplates.</exception>
         public void Start(bool OpenBrowser) {
             if(!listener.IsListening) {
                 InitService();
+
+                CheckForTemplateCollisions();
 
                 listener.Start();
                 listener.BeginGetContext(NewRequest, null);                
@@ -76,13 +80,13 @@ namespace JsonWebService {
             Uri = new System.Uri(listener.Prefixes.First().Replace("+", "localhost"));
 
             Log("Obtaining service method information");
-            methods = from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
-                      let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
-                      where attribs.Count() > 0
-                      select new ServiceBridge {
-                          MethodInfo = mi,
-                          Attribute = attribs.Single()
-                      };
+            methods =  from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
+                       let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
+                       where attribs.Count() > 0
+                       select new ServiceBridge {
+                           MethodInfo = mi,
+                           Attribute = attribs.Single()
+                       };
             
             if(AllowDescribe) {
                 Uri temp;
@@ -107,7 +111,7 @@ namespace JsonWebService {
                 return;
             }
 
-            ServiceBridge m = methods.Where(jm => jm.IsMatch(Request.Url.LocalPath)).FirstOrDefault();
+            ServiceBridge m = methods.Where(jm => jm.IsMatch(Request.Url.LocalPath, Request.HttpMethod, Request.QueryString.AllKeys)).FirstOrDefault();
 
             if(Authorize && !AuthorizeRequest(Request)) {                
                 Respond(Response, Unauthorized());
@@ -221,6 +225,24 @@ namespace JsonWebService {
                         verb = m.Attribute.Verb,
                         example = e == null ? string.Empty : e.AbsoluteUri
                     }).ToArray();
+        }
+        void CheckForTemplateCollisions() {
+            var q = from m in methods
+                    group m by m.GetHashCode() into dupes
+                    where dupes.Count() > 1
+                    let d = dupes.First().Attribute
+                    select new {
+                        Path = d.Path,
+                        ParameterNames = d.ParameterNames,
+                        Verb = d.Verb,
+                        Methods = dupes.Select(m => m.MethodInfo.Name).ToArray()
+                    };
+
+
+            if(q.Count() > 0) {
+                var e = q.First();
+                throw new TemplateCollisionException(e.Path, e.ParameterNames, e.Verb, e.Methods);
+            }
         }
 
         /// <summary>
