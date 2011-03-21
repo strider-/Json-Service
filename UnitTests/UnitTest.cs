@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using JsonWebService;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace UnitTests {
     /// <summary>
@@ -50,7 +52,7 @@ namespace UnitTests {
             // the invoking the method via service (with no parameters) should return a json document
             dynamic doc = GetDocument("");
 
-            Assert.IsTrue(doc.status == "ok");
+            Assert.AreEqual(doc.status, "ok");
         }
 
         [TestMethod]
@@ -64,7 +66,7 @@ namespace UnitTests {
             // the invoking the method via service (with parameters) should return a json document
             dynamic doc = GetDocument("add?value1=2&value2=3");
 
-            Assert.IsTrue(doc.sum == 5);
+            Assert.AreEqual(doc.sum, 5);
         }
 
         [TestMethod]
@@ -72,7 +74,7 @@ namespace UnitTests {
             // Invalid parameter types should fail
             dynamic doc = GetDocument("add?value1=X&value2=Y");
 
-            Assert.IsTrue(doc.status == "failed");
+            Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
@@ -80,7 +82,7 @@ namespace UnitTests {
             // The casing of the parameter names shouldn't matter
             dynamic doc = GetDocument("add?VALUE1=3&vAlUe2=10");
 
-            Assert.IsTrue(doc.sum == 13);
+            Assert.AreEqual(doc.sum, 13);
         }
 
         [TestMethod]
@@ -88,7 +90,7 @@ namespace UnitTests {
             // Attempting to invoke a method that does not exist should fail
             dynamic doc = GetDocument("idontexist");
 
-            Assert.IsTrue(doc.status == "failed");
+            Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
@@ -96,8 +98,8 @@ namespace UnitTests {
             // An unhandled exception in the invoked method should fail, but still return json to the client
             dynamic doc = GetDocument("gonnafail");
 
-            Assert.IsTrue(doc.status == "failed");
-            Assert.IsTrue(doc.error == "You should still get a json response with an unhandled exception.");
+            Assert.AreEqual(doc.status, "failed");
+            Assert.AreEqual(doc.error, "You should still get a json response with an unhandled exception.");
         }
 
         [TestMethod]
@@ -108,7 +110,7 @@ namespace UnitTests {
             dynamic doc = GetDocument("help");
 
             Assert.IsNotNull(ts.DescriptionUri);
-            Assert.IsFalse(doc.status == "failed");
+            Assert.AreNotEqual(doc.status, "failed");
         }
 
         [TestMethod]
@@ -118,7 +120,7 @@ namespace UnitTests {
             ts.AllowDescribe = false;
             dynamic doc = GetDocument("help");
 
-            Assert.IsTrue(doc.status == "failed");
+            Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
@@ -127,7 +129,7 @@ namespace UnitTests {
             ts.Authorize = true;
             dynamic doc = GetDocument("");
 
-            Assert.IsTrue(doc.status == "failed");
+            Assert.AreEqual(doc.status, "failed");
             ts.Authorize = false;
         }
 
@@ -137,7 +139,7 @@ namespace UnitTests {
             ts.Authorize = true;
             dynamic doc = GetDocument("?apikey=anythingwillwork");
 
-            Assert.IsFalse(doc.status == "failed");
+            Assert.AreNotEqual(doc.status, "failed");
             ts.Authorize = false;
         }
 
@@ -147,7 +149,7 @@ namespace UnitTests {
             ts.Authorize = false;
             dynamic doc = GetDocument("?apikey=anythingwillwork");
 
-            Assert.IsTrue(doc.status == "ok");
+            Assert.AreEqual(doc.status, "ok");
         }
 
         [TestMethod]
@@ -155,7 +157,7 @@ namespace UnitTests {
             // Incorrect verbs should be rejected
             dynamic doc = GetDocument("save?id=1");
 
-            Assert.IsTrue(doc.status == "failed");
+            Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
@@ -163,7 +165,7 @@ namespace UnitTests {
             // Correct verbs should be accepted
             dynamic doc = PostDocument("save?id=1", string.Empty);
 
-            Assert.IsTrue(doc.status == "ok");
+            Assert.AreEqual(doc.status, "ok");
         }
 
         [TestMethod]
@@ -171,7 +173,7 @@ namespace UnitTests {
             // Missing parameters with no default values should cause a failure
             dynamic doc = GetDocument("add?value1=3");
 
-            Assert.IsTrue(doc.status == "failed");
+            Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
@@ -179,7 +181,7 @@ namespace UnitTests {
             // Missing parameters that have a default value should succeed
             dynamic doc = GetDocument("mult?value2=3");
 
-            Assert.IsTrue(doc.product == 0);
+            Assert.AreEqual(doc.product, 0);
         }
 
         [TestMethod]
@@ -187,9 +189,9 @@ namespace UnitTests {
             // Posting a json document to a service method that accepts one should succeed
             dynamic doc = PostDocument("save?id=2", "{ \"name\": \"Mike\", \"age\": 31 }");
 
-            Assert.IsTrue(doc.status == "ok");
-            Assert.IsTrue(doc.name == "Mike");
-            Assert.IsTrue(doc.age == 31);
+            Assert.AreEqual(doc.status, "ok");
+            Assert.AreEqual(doc.name, "Mike");
+            Assert.AreEqual(doc.age, 31);
         }
 
         [TestMethod]
@@ -197,7 +199,7 @@ namespace UnitTests {
             // Rejecting a broken json document
             dynamic doc = PostDocument("save?id=3", "{ not valid json }");
 
-            Assert.IsTrue(doc.status == "failed");
+            Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
@@ -205,8 +207,8 @@ namespace UnitTests {
             // Paths in the UriTemplate should be respected
             dynamic doc = GetDocument("i/am/a/multipart/path?with=strings_and_things");
 
-            Assert.IsTrue(doc.status == "ok");
-            Assert.IsTrue(doc.vars == "strings_and_things");
+            Assert.AreEqual(doc.status, "ok");
+            Assert.AreEqual(doc.vars, "strings_and_things");
         }
 
         [TestMethod]
@@ -214,7 +216,7 @@ namespace UnitTests {
             // The appearance of a leading slash on the UriTemplate & Example properties of a VerbAttribute shouldn't matter.
             dynamic doc = GetDocument("/slashprefix");
 
-            Assert.IsTrue(doc.status == "ok");
+            Assert.AreEqual(doc.status, "ok");
         }
 
         [TestMethod]
@@ -227,7 +229,7 @@ namespace UnitTests {
 
             dynamic doc = GetDocument("I/Need/Help");
 
-            Assert.IsFalse(doc.status == "failed");
+            Assert.AreNotEqual(doc.status, "failed");
 
             ts.Stop();
             ts.DescribePath = "/help";
@@ -239,10 +241,10 @@ namespace UnitTests {
             // You don't have to return an anonymous object, whatever object returned should be properly serialized to json.
             dynamic doc = GetDocument("customobj");
 
-            Assert.IsFalse(doc.status == "failed");
-            Assert.IsTrue(doc.A == "Testing");
-            Assert.IsTrue(doc.C == 1980);
-            Assert.IsTrue(doc.D[2] == "III");
+            Assert.AreNotEqual(doc.status, "failed");
+            Assert.AreEqual(doc.A, "Testing");
+            Assert.AreEqual(doc.C, 1980);
+            Assert.AreEqual(doc.D[2], "III");
             Assert.IsFalse(doc.F);
             Assert.IsNull(doc.E.B);
             Assert.IsTrue(doc.E.F);
@@ -255,23 +257,42 @@ namespace UnitTests {
                 dynamic doc = GetDocument("statuscode");
                 Assert.Fail();
             } catch(WebException e) {
-                Assert.IsTrue(((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotImplemented);
-            }            
+                Assert.AreEqual(((HttpWebResponse)e.Response).StatusCode, HttpStatusCode.NotImplemented);
+            }
         }
 
         [TestMethod]
         public void MaxParameterMatching() {
             dynamic doc = GetDocument("op?a=5");
 
-            Assert.IsTrue(doc.Value == 5);
+            Assert.AreEqual(doc.Value, 5);
 
             doc = GetDocument("op?a=5&b=10");
 
-            Assert.IsTrue(doc.Value == 50);
+            Assert.AreEqual(doc.Value, 50);
 
             doc = GetDocument("op?a=5&b=7&c=3");
 
-            Assert.IsTrue(doc.Value == 105);
+            Assert.AreEqual(doc.Value, 105);
+        }
+
+        [TestMethod]
+        public void TemplateCollisionExceptionSerialization() {
+            string[] parms = new string[] { },
+                     meths = new string[] { "Help", "Describe" };
+            TemplateCollisionException e = new TemplateCollisionException("/help", parms, "GET", meths);
+
+            using(Stream s = new MemoryStream()) {
+                BinaryFormatter formatter = new BinaryFormatter();
+                formatter.Serialize(s, e);
+                s.Position = 0;
+                e = (TemplateCollisionException)formatter.Deserialize(s);
+            }
+            
+            Assert.AreEqual(e.Path, "/help");
+            CollectionAssert.AreEqual(e.ParameterNames, parms);
+            Assert.AreEqual(e.Verb, "GET");
+            CollectionAssert.AreEqual(e.Methods, meths);
         }
 
         private TestContext testContextInstance;
@@ -310,5 +331,5 @@ namespace UnitTests {
         // public void MyTestCleanup() { }
         //
         #endregion
-    }    
+    }
 }

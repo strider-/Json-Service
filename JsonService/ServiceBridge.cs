@@ -32,10 +32,10 @@ namespace JsonWebService {
         /// <returns></returns>
         public bool IsMatch(string path, string verb, string[] qsKeys) {
             return Attribute.Path.Equals(path, StringComparison.InvariantCultureIgnoreCase) &&
-                RequiredParameters().All(p => qsKeys.Contains(p, StringComparer.InvariantCultureIgnoreCase)) &&
+                GetRequiredParameters().All(p => qsKeys.Contains(p, StringComparer.InvariantCultureIgnoreCase)) &&
                 Attribute.Verb.Equals(verb, StringComparison.InvariantCultureIgnoreCase);
         }
-        string[] RequiredParameters() {
+        string[] GetRequiredParameters() {
             return (from p in MethodInfo.GetParameters()
                     let k = Attribute.GetParameterName(p.Name)
                     where k != null && p.DefaultValue == System.DBNull.Value
