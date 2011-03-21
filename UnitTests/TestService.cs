@@ -13,21 +13,21 @@ namespace UnitTests {
             };
         }
 
-        [Get("add?value1={a}&value2={b}", Description = "Returns the sum of 2 numbers.", Example = "add?value1=3&value2=5")]
+        [Get("add?value1={a}&value2={b}")]
         public object Sum(int a, int b) {
             return new {
                 sum = a + b
             };
         }
 
-        [Get("mult?value1={a}&value2={b}", Description = "Returns the product of 2 numbers.", Example = "mult?value1=2&value2=7")]
+        [Get("mult?value1={a}&value2={b}")]
         public object Product(int a = 0, int b = 0) {
             return new {
                 product = a * b
             };
         }
 
-        [Get("/slashprefix", Description = "Leading slash check", Example = "/slashprefix")]
+        [Get("/slashprefix")]
         public object Slash() {
             return new {
                 status = "ok",
@@ -35,7 +35,12 @@ namespace UnitTests {
             };
         }
 
-        [Get("i/am/a/multipart/path?with={vars}", Description = "Mutipart path testing", Example = "i/am/a/multipart/path?with=vars")]
+        [Get("/gonnafail")]
+        public object ThrowsException() {
+            throw new Exception("You should still get a json response with an unhandled exception.");
+        }
+
+        [Get("i/am/a/multipart/path?with={vars}")]
         public object PathCheck(string vars) {
             return new {
                 status = "ok",
@@ -44,7 +49,7 @@ namespace UnitTests {
             };
         }
 
-        [Post("save?id={id}", Description = "Updates a record.", Example = "save?id=0", PostedDocument = "document")]
+        [Post("save?id={id}", PostedDocument = "document")]
         public object Update(int id, dynamic document) {
             return new {
                 status = "ok",
@@ -54,7 +59,7 @@ namespace UnitTests {
             };
         }
 
-        [Get("/customobj", Description = "Returns an object serialized to json", Example = "/customobj")]
+        [Get("/customobj")]
         public object CustomObject() {
             CustomObject obj = new CustomObject {
                 A = "Testing",
@@ -74,7 +79,7 @@ namespace UnitTests {
             return obj;
         }
 
-        [Get("/statuscode", Description = "Returning a custom status code", Example = "/statuscode")]
+        [Get("/statuscode")]
         public object StatusCode() {
             return WithStatusCode(null, HttpStatusCode.NotImplemented);
         }

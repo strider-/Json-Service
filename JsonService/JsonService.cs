@@ -163,7 +163,8 @@ namespace JsonWebService {
                         Respond(Response, ParameterFailure(ae));
                         Log("Parameter value missing or invalid");
                     } catch(Exception e) {                        
-                        Respond(Response, CallFailure(e));
+                        // the base exception will always be a invocation exception, the inner exception is the heart of the problem.
+                        Respond(Response, CallFailure(e.InnerException));
                         Log("Failure to execute method");
                     }
                 }

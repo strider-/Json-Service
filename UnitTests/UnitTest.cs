@@ -92,6 +92,15 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        public void CallFailure() {
+            // An unhandled exception in the invoked method should fail, but still return json to the client
+            dynamic doc = GetDocument("gonnafail");
+
+            Assert.IsTrue(doc.status == "failed");
+            Assert.IsTrue(doc.error == "You should still get a json response with an unhandled exception.");
+        }
+
+        [TestMethod]
         public void AllowDescribeOn() {
             // Service descriptions should not fail when the DescribeUri is not null and AllowDescribe is true
             ts.Authorize = false;
