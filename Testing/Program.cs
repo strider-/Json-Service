@@ -32,7 +32,5 @@ namespace Testing {
                 sum = a + b
             };
         }
-
-        override Un
     }
 }
