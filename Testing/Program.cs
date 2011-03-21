@@ -24,18 +24,5 @@ namespace Testing {
                 helpurl = DescriptionUri == null ? null : DescriptionUri.AbsoluteUri
             };
         }
-
-        [Get("/test?id={x}")]
-        public object A(int x) {
-            return x;
-        }
-        [Get("/test?a={x}&b={y}")]
-        public object B(int x, int y=0) {
-            return x * y;
-        }
-        [Get("/test?c={x}&d={y}&e={z}")]
-        public object C(int x, int y, int z) {
-            return (x * y) + z;
-        }
     }
 }

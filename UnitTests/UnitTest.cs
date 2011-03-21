@@ -259,6 +259,21 @@ namespace UnitTests {
             }            
         }
 
+        [TestMethod]
+        public void MaxParameterMatching() {
+            dynamic doc = GetDocument("op?a=5");
+
+            Assert.IsTrue(doc.Value == 5);
+
+            doc = GetDocument("op?a=5&b=10");
+
+            Assert.IsTrue(doc.Value == 50);
+
+            doc = GetDocument("op?a=5&b=7&c=3");
+
+            Assert.IsTrue(doc.Value == 105);
+        }
+
         private TestContext testContextInstance;
 
         /// <summary>

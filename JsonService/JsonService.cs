@@ -104,32 +104,36 @@ namespace JsonWebService {
         void ProcessRequest(HttpListenerContext Context) {
             var Request = Context.Request;
             var Response = Context.Response;
-            
+
             if(methods.Count() == 0) {
                 Respond(Response, NoExposedMethods());
                 Log("There are no methods exposed by this service!");
                 return;
             }
 
-            ServiceBridge m = methods.Where(jm => jm.IsMatch(Request.Url.LocalPath, Request.HttpMethod, Request.QueryString.AllKeys)).FirstOrDefault();
+            // return the method with the greatest number of matched parameters
+            ServiceBridge bridge = (from m in methods
+                                    where m.IsMatch(Request.Url.LocalPath, Request.HttpMethod, Request.QueryString.AllKeys)
+                                    orderby m.Attribute.ParameterNames.Length descending
+                                    select m).FirstOrDefault();
 
-            if(Authorize && !AuthorizeRequest(Request)) {                
+            if(Authorize && !AuthorizeRequest(Request)) {
                 Respond(Response, Unauthorized());
                 Log("Unauthorized request");
                 return;
             }
 
-            if(AllowDescribe && DescriptionUri != null && Request.Url.LocalPath.Equals(DescriptionUri.LocalPath, StringComparison.InvariantCultureIgnoreCase)) {                
+            if(AllowDescribe && DescriptionUri != null && Request.Url.LocalPath.Equals(DescriptionUri.LocalPath, StringComparison.InvariantCultureIgnoreCase)) {
                 Respond(Response, Describe());
                 Log("Describing service");
                 return;
-            } 
+            }
 
-            if(m == null) {                
+            if(bridge == null) {
                 Respond(Response, NoMatchingMethod());
                 Log("No suitable method found");
             } else {
-                if(!Request.HttpMethod.Equals(m.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {                    
+                if(!Request.HttpMethod.Equals(bridge.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {
                     Respond(Response, InvalidVerb());
                     Log("Invalid HTTP verb");
                 } else {
@@ -148,10 +152,10 @@ namespace JsonWebService {
                             }
                         }
 
-                        var args = m.MapParameters(Request.QueryString, postedDoc);
-                        
+                        var args = bridge.MapParameters(Request.QueryString, postedDoc);
+
                         var result = GetType().InvokeMember(
-                            name: m.MethodInfo.Name,
+                            name: bridge.MethodInfo.Name,
                             invokeAttr: Flags,
                             binder: Type.DefaultBinder,
                             target: this,
@@ -162,11 +166,11 @@ namespace JsonWebService {
                         );
 
                         Respond(Response, result);
-                        Log(string.Format("Invoked {0}.{1}({2})", m.MethodInfo.DeclaringType.Name, m.MethodInfo.Name, string.Join(", ", args.Item3)));
-                    } catch(ArgumentException ae) {           
+                        Log(string.Format("Invoked {0}.{1}({2})", bridge.MethodInfo.DeclaringType.Name, bridge.MethodInfo.Name, string.Join(", ", args.Item3)));
+                    } catch(ArgumentException ae) {
                         Respond(Response, ParameterFailure(ae));
                         Log("Parameter value missing or invalid");
-                    } catch(Exception e) {                        
+                    } catch(Exception e) {
                         // the base exception will always be a invocation exception, the inner exception is the heart of the problem.
                         Respond(Response, CallFailure(e.InnerException));
                         Log("Failure to execute method");

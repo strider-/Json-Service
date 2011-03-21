@@ -27,6 +27,19 @@ namespace UnitTests {
             };
         }
 
+        [Get("/op?a={x}")]
+        public object OpA(int x) {
+            return x;
+        }
+        [Get("/op?a={x}&b={y}")]
+        public object OpB(int x, int y) {
+            return x * y;
+        }
+        [Get("/op?a={x}&b={y}&c={z}")]
+        public object OpC(int x, int y, int z) {
+            return x * y * z;
+        }
+
         [Get("/slashprefix")]
         public object Slash() {
             return new {

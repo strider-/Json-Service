@@ -38,7 +38,7 @@ namespace JsonWebService {
         string[] RequiredParameters() {
             return (from p in MethodInfo.GetParameters()
                     let k = Attribute.GetParameterName(p.Name)
-                    where p.DefaultValue == System.DBNull.Value && k != null
+                    where k != null && p.DefaultValue == System.DBNull.Value
                     select k).ToArray();
         }
         /// <summary>
