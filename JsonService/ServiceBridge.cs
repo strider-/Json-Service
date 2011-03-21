@@ -32,8 +32,14 @@ namespace JsonWebService {
         /// <returns></returns>
         public bool IsMatch(string path, string verb, string[] qsKeys) {
             return Attribute.Path.Equals(path, StringComparison.InvariantCultureIgnoreCase) &&
-                qsKeys.All(k => Attribute.ParameterNames.Contains(k, StringComparer.InvariantCultureIgnoreCase)) &&
+                RequiredParameters().All(p => qsKeys.Contains(p, StringComparer.InvariantCultureIgnoreCase)) &&
                 Attribute.Verb.Equals(verb, StringComparison.InvariantCultureIgnoreCase);
+        }
+        string[] RequiredParameters() {
+            return (from p in MethodInfo.GetParameters()
+                    let k = Attribute.GetParameterName(p.Name)
+                    where p.DefaultValue == System.DBNull.Value && k != null
+                    select k).ToArray();
         }
         /// <summary>
         /// Serves as a hash function to determine template collisions.
