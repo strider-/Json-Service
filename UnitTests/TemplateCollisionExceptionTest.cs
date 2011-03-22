@@ -32,6 +32,7 @@ namespace UnitTests {
         ///A test for TemplateCollisionException Serialization
         ///</summary>
         [TestMethod]
+        [Description("Verifying this custom exception will be serialized properly")]
         public void TemplateCollisionExceptionSerialization() {
             string[] parms = new string[] { },
                      meths = new string[] { "Help", "Describe" };

@@ -58,60 +58,60 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("Calling a method directly (with no parameters) should return an anon object")]
         public void NoParameterMethodCall() {
-            // the calling a method directly (with no parameters) should return an anon object
             Assert.IsNotNull(ts.Root());
         }
 
         [TestMethod]
+        [Description("Invoking the method via service (with no parameters) should return a json document")]
         public void NoParameterServiceCall() {
-            // the invoking the method via service (with no parameters) should return a json document
             dynamic doc = GetDocument("");
 
             Assert.AreEqual(doc.status, "ok");
         }
 
         [TestMethod]
+        [Description("Calling a method directly (with parameters) should return an anon object")]
         public void ParameterMethod() {
-            // the calling a method directly (with parameters) should return an anon object
             Assert.IsNotNull(ts.Sum(2, 2));
         }
 
         [TestMethod]
+        [Description("Invoking the method via service (with parameters) should return a json document")]
         public void ParameterService() {
-            // the invoking the method via service (with parameters) should return a json document
             dynamic doc = GetDocument("add?value1=2&value2=3");
 
             Assert.AreEqual(doc.sum, 5);
         }
 
         [TestMethod]
+        [Description("Invalid parameter types should fail")]
         public void ParameterTypeFailure() {
-            // Invalid parameter types should fail
             dynamic doc = GetDocument("add?value1=X&value2=Y");
 
             Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
+        [Description("The casing of the parameter names shouldn't matter")]
         public void ParameterNameCasingIrrelevant() {
-            // The casing of the parameter names shouldn't matter
             dynamic doc = GetDocument("add?VALUE1=3&vAlUe2=10");
 
             Assert.AreEqual(doc.sum, 13);
         }
 
         [TestMethod]
+        [Description("Attempting to invoke a method that does not exist should fail")]
         public void InvalidCall() {
-            // Attempting to invoke a method that does not exist should fail
             dynamic doc = GetDocument("idontexist");
 
             Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
+        [Description("An unhandled exception in the invoked method should fail, but still return json to the client")]
         public void CallFailure() {
-            // An unhandled exception in the invoked method should fail, but still return json to the client
             dynamic doc = GetDocument("gonnafail");
 
             Assert.AreEqual(doc.status, "failed");
@@ -119,8 +119,8 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("Service descriptions should not fail when the DescribeUri is not null and AllowDescribe is true")]
         public void AllowDescribeOn() {
-            // Service descriptions should not fail when the DescribeUri is not null and AllowDescribe is true
             ts.Authorize = false;
             ts.AllowDescribe = true;
             dynamic doc = GetDocument("help");
@@ -130,8 +130,8 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("Service description should fail when AllowDescribe is false")]
         public void AllowDescribeOff() {
-            // Service description should fail when AllowDescribe is false
             ts.Authorize = false;
             ts.AllowDescribe = false;
             dynamic doc = GetDocument("help");
@@ -140,8 +140,8 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("Attempting to invoke a method when Authorize is true (with no credentials) should fail")]
         public void AuthorizeOn() {
-            // Attempting to invoke a method when Authorize is true (with no credentials) should fail
             ts.Authorize = true;
             dynamic doc = GetDocument("");
 
@@ -150,8 +150,8 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("Attempting to invoke a method when Authorize is true (with valid credentials) should succeed")]
         public void AuthorizeOnWithValidCreds() {
-            // Attempting to invoke a method when Authorize is true (with valid credentials) should succeed
             ts.Authorize = true;
             dynamic doc = GetDocument("?apikey=anythingwillwork");
 
@@ -160,8 +160,8 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("Attempting to invoke a method when Authorize is false should succeed")]
         public void AuthorizeOff() {
-            // Attempting to invoke a method when Authorize is false should succeed
             ts.Authorize = false;
             dynamic doc = GetDocument("?apikey=anythingwillwork");
 
@@ -169,40 +169,40 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("Incorrect verbs should be rejected")]
         public void HttpVerbReject() {
-            // Incorrect verbs should be rejected
             dynamic doc = GetDocument("save?id=1");
 
             Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
+        [Description("Correct verbs should be accepted")]
         public void HttpVerbAccept() {
-            // Correct verbs should be accepted
             dynamic doc = PostDocument("save?id=1", string.Empty);
 
             Assert.AreEqual(doc.status, "ok");
         }
 
         [TestMethod]
+        [Description("Missing parameters with no default values should cause a failure")]
         public void MissingRequiredParameter() {
-            // Missing parameters with no default values should cause a failure
             dynamic doc = GetDocument("add?value1=3");
 
             Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
+        [Description("Missing parameters that have a default value should succeed")]
         public void MissingNonRequiredParameter() {
-            // Missing parameters that have a default value should succeed
             dynamic doc = GetDocument("mult?value2=3");
 
             Assert.AreEqual(doc.product, 0);
         }
 
         [TestMethod]
+        [Description("Posting a json document to a service method that accepts one should succeed")]
         public void PostingJsonDocument() {
-            // Posting a json document to a service method that accepts one should succeed
             dynamic doc = PostDocument("save?id=2", "{ \"name\": \"Mike\", \"age\": 31 }");
 
             Assert.AreEqual(doc.status, "ok");
@@ -211,16 +211,16 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("Rejecting a broken json document")]
         public void InvalidJsonPosted() {
-            // Rejecting a broken json document
             dynamic doc = PostDocument("save?id=3", "{ not valid json }");
 
             Assert.AreEqual(doc.status, "failed");
         }
 
         [TestMethod]
+        [Description("Paths in the UriTemplate should be respected")]
         public void MultipartPaths() {
-            // Paths in the UriTemplate should be respected
             dynamic doc = GetDocument("i/am/a/multipart/path?with=strings_and_things");
 
             Assert.AreEqual(doc.status, "ok");
@@ -228,16 +228,16 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("The appearance of a leading slash on the UriTemplate & Example properties of a VerbAttribute shouldn't matter.")]
         public void LeadingSlashIrrelevant() {
-            // The appearance of a leading slash on the UriTemplate & Example properties of a VerbAttribute shouldn't matter.
             dynamic doc = GetDocument("/slashprefix");
 
             Assert.AreEqual(doc.status, "ok");
         }
 
         [TestMethod]
+        [Description("Custom set service description paths should be a-ok")]
         public void CustomDescriptionPath() {
-            // Custom set service description paths should be a-ok
             ts.Stop();
             ts.DescribePath = "/I/Need/Help";
             ts.AllowDescribe = true;
@@ -253,8 +253,8 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("You don't have to return an anonymous object, whatever object returned should be properly serialized to json.")]
         public void ObjectSerialization() {
-            // You don't have to return an anonymous object, whatever object returned should be properly serialized to json.
             dynamic doc = GetDocument("customobj");
 
             Assert.AreNotEqual(doc.status, "failed");
@@ -267,8 +267,8 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("Status code specifed when using WithStatusCode should be sent to the client")]
         public void CustomStatusCode() {
-            // Status code specifed when using WithStatusCode should be sent to the client
             try {
                 dynamic doc = GetDocument("statuscode");
                 Assert.Fail();
@@ -278,6 +278,7 @@ namespace UnitTests {
         }
 
         [TestMethod]
+        [Description("Template matching should always match the method that has the most number of required parameters met.")]
         public void MaxParameterMatching() {
             dynamic doc = GetDocument("op?a=5");
 

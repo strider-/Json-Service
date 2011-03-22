@@ -26,40 +26,11 @@ namespace UnitTests {
             }
         }
 
-        #region Additional test attributes
-        // 
-        //You can use the following additional attributes as you write your tests:
-        //
-        //Use ClassInitialize to run code before running the first test in the class
-        //[ClassInitialize()]
-        //public static void MyClassInitialize(TestContext testContext)
-        //{
-        //}
-        //
-        //Use ClassCleanup to run code after all tests in a class have run
-        //[ClassCleanup()]
-        //public static void MyClassCleanup()
-        //{
-        //}
-        //
-        //Use TestInitialize to run code before running each test
-        //[TestInitialize()]
-        //public void MyTestInitialize()
-        //{
-        //}
-        //
-        //Use TestCleanup to run code after each test has run
-        //[TestCleanup()]
-        //public void MyTestCleanup()
-        //{
-        //}
-        //
-        #endregion
-
         /// <summary>
         ///A test for JsonDocument Constructor
         ///</summary>
         [TestMethod()]
+        [Description("Verifying constructor chain")]
         public void JsonDocumentConstructorTest1() {
             object content = new {
                 content = ""
@@ -76,6 +47,7 @@ namespace UnitTests {
         ///A test for JsonDocument Constructor
         ///</summary>
         [TestMethod()]
+        [Description("Verifying primary constructor")]
         public void JsonDocumentConstructorTest2() {
             object content = new {
                 content = ""
@@ -91,6 +63,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("Returning the correct token when parsing json")]
         public void NextTokenTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             target.json = "{ \"content\": \"string\" }".ToCharArray();
@@ -103,6 +76,7 @@ namespace UnitTests {
         ///A test for Parse
         ///</summary>
         [TestMethod()]
+        [Description("A dynamic object should be returned when parsing a valid json document")]
         public void ParseTest() {
             string JsonObject = "{ \"content\": \"string\", \"type\": 3 }";
             dynamic actual = JsonDocument.Parse(JsonObject);
@@ -116,6 +90,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("Checking what the the next token will be, but not consuming it")]
         public void PeekTokenTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             target.json = "[ 0, 1, \"2\", true, null ]".ToCharArray();
@@ -128,6 +103,7 @@ namespace UnitTests {
         ///A test for ToString
         ///</summary>
         [TestMethod()]
+        [Description("The actual work of parsing a json document into a dynamic object")]
         public void ToStringTest() {
             JsonDocument target = new JsonDocument(new {
                 name = "Mike",
@@ -146,6 +122,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("Escaped characters should become literal when converted to json ('\\r' becoming \"\\r\")")]
         public void cleanTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             string value = "\r\n\t";
@@ -159,6 +136,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("Irrelevant whitespace in the document is discarded when parsing")]
         public void consumeWhiteSpaceTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor(); 
             int index = target.parseIndex;
@@ -173,6 +151,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("An array of objects should be properly converted to a json array.")]
         public void getJsonArrayTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             target.Formatting = JsonDocument.JsonFormat.None;
@@ -189,6 +168,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("An object should be properly converted to a json object, using the public properties")]
         public void getJsonObjectTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             target.Formatting = JsonDocument.JsonFormat.None;
@@ -209,6 +189,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("Should properly parse any value into its json equivilent.")]
         public void getJsonValueTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             target.Formatting = JsonDocument.JsonFormat.None;
@@ -246,6 +227,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("Determining whether or not an object is an array.")]
         public void isArrayTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             object obj = new bool[] { true, false };
@@ -259,6 +241,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("Parsing an array of json objects into an ArrayList")]
         public void parseArrayTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             target.Formatting = JsonDocument.JsonFormat.None;
@@ -273,6 +256,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("Parsing a json number into a double")]
         public void parseNumberTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             target.Formatting = JsonDocument.JsonFormat.None;
@@ -287,6 +271,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("A json object should be properly converted into a Hashtable")]
         public void parseObjectTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             target.Formatting = JsonDocument.JsonFormat.None;
@@ -306,6 +291,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("A json string should be properly converted into a String")]
         public void parseStringTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             target.Formatting = JsonDocument.JsonFormat.None;
@@ -320,6 +306,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("A json value should be properly parsed into a string, double, bool, ArrayList, Hashtable or null")]
         public void parseValueTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor();
             target.Formatting = JsonDocument.JsonFormat.None;
@@ -335,6 +322,7 @@ namespace UnitTests {
         ///</summary>
         [TestMethod()]
         [DeploymentItem("JsonService.dll")]
+        [Description("Verifying proper indentation when formatting is Tabs or Spaces.")]
         public void tabStringTest() {
             JsonDocument_Accessor target = new JsonDocument_Accessor(); 
             target.Formatting = JsonDocument.JsonFormat.Spaces;

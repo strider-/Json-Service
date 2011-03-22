@@ -180,7 +180,7 @@ namespace JsonWebService {
         }
         void Respond(HttpListenerResponse Response, object content) {
             JsonDocument doc;
-            HttpStatusCode code = HttpStatusCode.OK;      
+            HttpStatusCode code = HttpStatusCode.OK;
 
             var tuple = content as Tuple<object, HttpStatusCode>;
             if(tuple != null) {
@@ -192,13 +192,15 @@ namespace JsonWebService {
 
             doc.Formatting = JsonDocument.JsonFormat.None;
             string raw = doc.ToString();
-
+            
+            Response.StatusCode = (int)code;
+            Response.StatusDescription = code.ToString();            
             Response.ContentType = "application/json";
             Response.ContentLength64 = raw.Length;
-            Response.StatusCode = (int)code;
             using(StreamWriter sw = new StreamWriter(Response.OutputStream)) {
                 sw.Write(raw);
             }
+            
             Response.Close();
         }
         void Log(string msg) {
