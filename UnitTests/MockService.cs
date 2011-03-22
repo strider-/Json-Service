@@ -3,7 +3,7 @@ using System.Net;
 using JsonWebService;
 
 namespace UnitTests {
-    class TestService : JsonService {
+    class MockService : JsonService {
         [Get("/", Description = "Service status OK!", Example = "/")]
         public object Root() {
             return new {

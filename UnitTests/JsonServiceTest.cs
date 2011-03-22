@@ -13,13 +13,29 @@ namespace UnitTests {
     /// Testing json service features
     /// </summary>
     [TestClass]
-    public class UnitTest {
-        static TestService ts;
+    public class JsonServiceTest {
+        static MockService ts;
         static WebClient wc;
+
+        private TestContext testContextInstance;
+        /// <summary>
+        ///Gets or sets the test context which provides
+        ///information about and functionality for the current test run.
+        ///</summary>
+        public TestContext TestContext {
+            get {
+                return testContextInstance;
+            }
+            set {
+                testContextInstance = value;
+            }
+        }
+
 
         [ClassInitialize]
         public static void StartServer(TestContext context) {
-            ts = new TestService();
+            ts = new MockService();
+            ts.Port = 9999;
             ts.LogOutput = null;
             ts.Start(false);
 
@@ -275,61 +291,5 @@ namespace UnitTests {
 
             Assert.AreEqual(doc.Value, 105);
         }
-
-        [TestMethod]
-        public void TemplateCollisionExceptionSerialization() {
-            string[] parms = new string[] { },
-                     meths = new string[] { "Help", "Describe" };
-            TemplateCollisionException e = new TemplateCollisionException("/help", parms, "GET", meths);
-
-            using(Stream s = new MemoryStream()) {
-                BinaryFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(s, e);
-                s.Position = 0;
-                e = (TemplateCollisionException)formatter.Deserialize(s);
-            }
-            
-            Assert.AreEqual(e.Path, "/help");
-            CollectionAssert.AreEqual(e.ParameterNames, parms);
-            Assert.AreEqual(e.Verb, "GET");
-            CollectionAssert.AreEqual(e.Methods, meths);
-        }
-
-        private TestContext testContextInstance;
-
-        /// <summary>
-        ///Gets or sets the test context which provides
-        ///information about and functionality for the current test run.
-        ///</summary>
-        public TestContext TestContext {
-            get {
-                return testContextInstance;
-            }
-            set {
-                testContextInstance = value;
-            }
-        }
-
-        #region Additional test attributes
-        //
-        // You can use the following additional attributes as you write your tests:
-        //
-        // Use ClassInitialize to run code before running the first test in the class
-        // [ClassInitialize()]
-        // public static void MyClassInitialize(TestContext testContext) { }
-        //
-        // Use ClassCleanup to run code after all tests in a class have run
-        // [ClassCleanup()]
-        // public static void MyClassCleanup() { }
-        //
-        // Use TestInitialize to run code before running each test 
-        // [TestInitialize()]
-        // public void MyTestInitialize() { }
-        //
-        // Use TestCleanup to run code after each test has run
-        // [TestCleanup()]
-        // public void MyTestCleanup() { }
-        //
-        #endregion
     }
 }
