@@ -43,10 +43,10 @@ namespace JsonWebService {
 
                 listener.Start();
                 listener.BeginGetContext(NewRequest, null);                
-                Log("Server started @ " + Uri.AbsoluteUri);
+                Log("Server started @ {0}", Uri.AbsoluteUri);
                 
                 if(AllowDescribe && DescriptionUri != null)
-                    Log("Service description @ " + DescriptionUri.AbsoluteUri);
+                    Log("Service description @ {0}", DescriptionUri.AbsoluteUri);
                 else
                     Log("Service description is not available.");
 
@@ -166,7 +166,7 @@ namespace JsonWebService {
                         );
 
                         Respond(Response, result);
-                        Log(string.Format("Invoked {0}.{1}({2})", bridge.MethodInfo.DeclaringType.Name, bridge.MethodInfo.Name, string.Join(", ", args.Item3)));
+                        Log("Invoked {0}.{1}({2})", bridge.MethodInfo.DeclaringType.Name, bridge.MethodInfo.Name, string.Join(", ", args.Item3));
                     } catch(ArgumentException ae) {
                         Respond(Response, ParameterFailure(ae));
                         Log("Parameter value missing or invalid");
@@ -203,9 +203,10 @@ namespace JsonWebService {
             
             Response.Close();
         }
-        void Log(string msg) {
+        void Log(string msg, params object[] args) {
             if(LogOutput != null) {
-                LogOutput.WriteLine(string.Format("[{0:MM/dd/yyyy HH:mm:ss}] {1}", DateTime.Now, msg));
+                LogOutput.Write("[{0:MM/dd/yyyy HH:mm:ss}]\t", DateTime.Now);
+                LogOutput.WriteLine(msg, args);
                 LogOutput.Flush();
             }
         }
@@ -245,9 +246,16 @@ namespace JsonWebService {
                     };
 
 
-            if(q.Count() > 0) {
+            if(q.Count() > 0) {                
+                foreach(var c in q) {
+                    Log("Template collision detected: Path={0}; Parameters={1}; Verb={2}; Methods={3}",
+                        c.Path, string.Join(",", c.ParameterNames), c.Verb, string.Join(",", c.Methods));
+                }
+
                 var e = q.First();
                 throw new TemplateCollisionException(e.Path, e.ParameterNames, e.Verb, e.Methods);
+            } else {
+                Log("No template collisions detected.");
             }
         }
 
