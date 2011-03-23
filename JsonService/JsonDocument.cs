@@ -79,7 +79,7 @@ namespace JsonWebService {
         JsonDocument() {
         }
         bool isArray(object obj) {
-            return obj is ICollection || obj is IEnumerator;
+            return (obj is ICollection || obj is IEnumerator || obj is IEnumerable || obj is IQueryable) && !(obj is string);
         }
         string tabString(int count) {
             if(Formatting == JsonFormat.Tabs)
@@ -116,21 +116,28 @@ namespace JsonWebService {
             if(o == null || (o.GetType().IsPrimitive && !(o is char)))
                 return o == null ? "null" : o.ToString().ToLower();
             else if(isArray(o)) {
-                return getJsonArray((IEnumerable)o, tabCount + 1);
+                return getJsonArray(o, tabCount + 1);
             } else if(o is string || o is char) {
                 return string.Format("\"{0}\"", clean(o.ToString()));
             } else {
                 return getJsonObject(o, tabCount + 1);
             }
         }
-        string getJsonArray(IEnumerable array, int tabCount) {
+        string getJsonArray(object array, int tabCount) {
             StringBuilder sb = new StringBuilder();
             List<string> l = new List<string>();
             string tab = tabString(tabCount);
 
             sb.AppendFormat("[{0}{1}", newLine, tab);
-            foreach(var item in array) {
-                l.Add(getJsonValue(item, tabCount));
+            if(array is IEnumerable) {
+                foreach(var item in (IEnumerable)array) {
+                    l.Add(getJsonValue(item, tabCount));
+                }
+            } else {
+                IEnumerator e = (IEnumerator)array;
+                while(e.MoveNext()) {
+                    l.Add(getJsonValue(e.Current, tabCount));
+                }
             }
 
             sb.Append(string.Join(string.Format(",{0}{1}", newLine, tab), l.ToArray()));

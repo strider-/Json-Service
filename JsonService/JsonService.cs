@@ -80,14 +80,14 @@ namespace JsonWebService {
             Uri = new System.Uri(listener.Prefixes.First().Replace("+", "localhost"));
 
             Log("Obtaining service method information");
-            methods =  from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
-                       let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
-                       where attribs.Count() > 0
-                       select new ServiceBridge {
-                           MethodInfo = mi,
-                           Attribute = attribs.Single()
-                       };
-            
+            methods = from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
+                      let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
+                      where attribs.Count() > 0
+                      select new ServiceBridge {
+                          MethodInfo = mi,
+                          Attribute = attribs.Single()
+                      };
+
             if(AllowDescribe) {
                 Uri temp;
                 if(Uri.TryCreate(Uri, DescribePath, out temp))
@@ -246,7 +246,7 @@ namespace JsonWebService {
                     };
 
 
-            if(q.Count() > 0) {                
+            if(q.Count() > 0) {
                 foreach(var c in q) {
                     Log("Template collision detected: Path={0}; Parameters={1}; Verb={2}; Methods={3}",
                         c.Path, string.Join(",", c.ParameterNames), c.Verb, string.Join(",", c.Methods));

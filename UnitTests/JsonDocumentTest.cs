@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections;
+using System.Linq;
 
 namespace UnitTests {
     /// <summary>
@@ -338,6 +339,35 @@ namespace UnitTests {
             expected = "\t\t";
             actual = target.tabString(count);
             Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        [Description("Verifying that collection types are properly serialized to a json array.")]
+        public void ArrayTest() {
+            int[] array = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+            JsonDocument doc;
+            string expected = "[1,2,3,4,5,6,7,8,9,10]";
+            string result;
+
+            doc = new JsonDocument(array, JsonDocument.JsonFormat.None, 0);
+            result = doc.ToString();
+            Assert.AreEqual(expected, result);
+
+            doc = new JsonDocument(array.OrderBy(i => i), JsonDocument.JsonFormat.None, 0);
+            result = doc.ToString();
+            Assert.AreEqual(expected, result);
+
+            doc = new JsonDocument(array.AsQueryable(), JsonDocument.JsonFormat.None, 0);
+            result = doc.ToString();
+            Assert.AreEqual(expected, result);
+
+            doc = new JsonDocument(array.ToList(), JsonDocument.JsonFormat.None, 0);
+            result = doc.ToString();
+            Assert.AreEqual(expected, result);
+
+            doc = new JsonDocument(array.GetEnumerator(), JsonDocument.JsonFormat.None, 0);
+            result = doc.ToString();
+            Assert.AreEqual(expected, result);
         }
     }
 }
