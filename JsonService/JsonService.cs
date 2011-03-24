@@ -28,6 +28,7 @@ namespace JsonWebService {
         /// Starts the service, without opening the default browser.
         /// </summary>
         /// <exception cref="JsonWebService.TemplateCollisionException">thrown if multiple methods have the same VerbAttribute with identical UriTemplates.</exception>
+        /// <exception cref="JsonWebService.InvalidPlaceholderException">thrown if the UriTemplate of a VerbAttribute has a placeholder that does not match a variable in the method signature</exception>
         public void Start() {
             Start(false);
         }
@@ -35,6 +36,7 @@ namespace JsonWebService {
         /// Starts the service, with the option to open the default browser.
         /// </summary>
         /// <exception cref="JsonWebService.TemplateCollisionException">thrown if multiple methods have the same VerbAttribute with identical UriTemplates.</exception>
+        /// <exception cref="JsonWebService.InvalidPlaceholderException">thrown if the UriTemplate of a VerbAttribute has a placeholder that does not match a variable in the method signature</exception>
         public void Start(bool OpenBrowser) {
             if(!listener.IsListening) {
                 InitService();
@@ -87,6 +89,15 @@ namespace JsonWebService {
                           MethodInfo = mi,
                           Attribute = attribs.Single()
                       };
+
+            Log("Validating placeholder variables");
+            var bads = methods.Where(m => m.InvalidPlaceholders().Count() > 0);
+            if(bads.Count() > 0) {
+                foreach(var b in bads) {
+                    Log("Invalid placeholder(s) on the {0} method: {1}", b.MethodInfo.Name, string.Join(",", b.InvalidPlaceholders()));
+                }
+                throw new InvalidPlaceholderException(bads.First().MethodInfo.Name, bads.First().InvalidPlaceholders());
+            }
 
             if(AllowDescribe) {
                 Uri temp;
@@ -191,19 +202,26 @@ namespace JsonWebService {
             }
 
             doc.Formatting = JsonDocument.JsonFormat.None;
-            using(MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(doc.ToString()))) {
-                Response.StatusCode = (int)code;
-                Response.StatusDescription = code.ToString();
-                Response.ContentType = "application/json";
-                Response.ContentLength64 = ms.Length;
-                using(Stream s = Response.OutputStream) {
-                    byte[] buffer = new byte[0x8000];
-                    while(ms.Position != ms.Length) {
-                        int r = ms.Read(buffer, 0, buffer.Length);
-                        s.Write(buffer, 0, r);
-                    }
+            byte[] raw = new byte[0];
+            try {
+                raw = Encoding.UTF8.GetBytes(doc.ToString());
+            } catch(Exception e) {
+
+            }
+
+            Response.StatusCode = (int)code;
+            Response.StatusDescription = code.ToString();
+            Response.ContentType = "application/json";
+            Response.ContentLength64 = raw.Length;
+            using(Stream s = Response.OutputStream) {
+                int offset = 0, size;
+                while(offset != raw.Length) {
+                    size = Math.Min(raw.Length - offset, 0x8000);
+                    s.Write(raw, offset, size);
+                    offset += size;
                 }
             }
+
             Response.Close();
         }
         void Log(string msg, params object[] args) {

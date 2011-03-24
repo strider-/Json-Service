@@ -24,6 +24,13 @@ namespace JsonWebService {
             set;
         }
         /// <summary>
+        /// Returns all placeholders defined in a UriTemplate that have no matching method parameter.
+        /// </summary>
+        /// <returns></returns>
+        public string[] InvalidPlaceholders() {
+            return Attribute.Placeholders.Except(MethodInfo.GetParameters().Select(p => p.Name), StringComparer.InvariantCultureIgnoreCase).ToArray();
+        }
+        /// <summary>
         /// Returns whether or not this method matches the method that was requested.
         /// </summary>
         /// <param name="path">Path the client requested</param>
