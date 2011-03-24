@@ -191,16 +191,19 @@ namespace JsonWebService {
             }
 
             doc.Formatting = JsonDocument.JsonFormat.None;
-            string raw = doc.ToString();
-            
-            Response.StatusCode = (int)code;
-            Response.StatusDescription = code.ToString();            
-            Response.ContentType = "application/json";
-            Response.ContentLength64 = raw.Length;
-            using(StreamWriter sw = new StreamWriter(Response.OutputStream)) {
-                sw.Write(raw);
+            using(MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(doc.ToString()))) {
+                Response.StatusCode = (int)code;
+                Response.StatusDescription = code.ToString();
+                Response.ContentType = "application/json";
+                Response.ContentLength64 = ms.Length;
+                using(Stream s = Response.OutputStream) {
+                    byte[] buffer = new byte[0x8000];
+                    while(ms.Position != ms.Length) {
+                        int r = ms.Read(buffer, 0, buffer.Length);
+                        s.Write(buffer, 0, r);
+                    }
+                }
             }
-            
             Response.Close();
         }
         void Log(string msg, params object[] args) {
