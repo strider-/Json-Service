@@ -2,7 +2,7 @@
 =============
 
 Run a custom json based web service by inheriting the JsonService class.  **Requires .NET 4.0+.**  
-All objects returned (anonymous or otherwise) will be properly serialized to json, based on the publically visible properies.
+All objects returned (anonymous or otherwise) will be properly serialized to json, based on the publically visible properties.
 
 Documentation
 -------
