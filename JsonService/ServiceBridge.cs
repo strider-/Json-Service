@@ -87,8 +87,9 @@ namespace JsonWebService {
                 bool hasDefault = pm.DefaultValue != System.DBNull.Value;
                 string key = Attribute.GetParameterName(pm.Name);
 
-                if(key == null && Attribute is PostAttribute) {
-                    if(pm.Name.Equals(((PostAttribute)Attribute).PostedDocument))
+                if(key == null && Attribute is EntityAttribute) {
+                    string pd = ((EntityAttribute)Attribute).PostedDocument;
+                    if(pm.Name.Equals(pd))
                         result.Item1[i] = postedDocument;
                 } else if(!qs.AllKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase) && !hasDefault) {
                     

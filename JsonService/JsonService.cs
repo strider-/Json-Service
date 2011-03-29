@@ -115,7 +115,7 @@ namespace JsonWebService {
         void ProcessRequest(HttpListenerContext Context) {
             var Request = Context.Request;
             var Response = Context.Response;
-
+            
             if(methods.Count() == 0) {
                 Respond(Response, NoExposedMethods());
                 Log("There are no methods exposed by this service!");
@@ -202,12 +202,7 @@ namespace JsonWebService {
             }
 
             doc.Formatting = JsonDocument.JsonFormat.None;
-            byte[] raw = new byte[0];
-            try {
-                raw = Encoding.UTF8.GetBytes(doc.ToString());
-            } catch(Exception e) {
-
-            }
+            byte[] raw = Encoding.UTF8.GetBytes(doc.ToString());
 
             Response.StatusCode = (int)code;
             Response.StatusDescription = code.ToString();
@@ -236,23 +231,23 @@ namespace JsonWebService {
         /// </summary>
         /// <returns></returns>
         object Describe() {
-            return (from m in methods
-                    let e = m.GetExampleUri(Uri)
-                    select new {
-                        path = m.Attribute.Path,
-                        desc = m.Attribute.Description,
-                        parameters = from pn in m.Attribute.ParameterNames
-                                     let p = m.GetParameterInfo(pn)
-                                     let r = p.DefaultValue == System.DBNull.Value
-                                     select new {
-                                         name = pn,
-                                         type = p.ParameterType.Name.ToLower(),
-                                         required = r,
-                                         @default = r ? null : p.DefaultValue
-                                     },
-                        verb = m.Attribute.Verb,
-                        example = e == null ? string.Empty : e.AbsoluteUri
-                    }).ToArray();
+            return from m in methods
+                   let e = m.GetExampleUri(Uri)
+                   select new {
+                       path = m.Attribute.Path,
+                       desc = m.Attribute.Description,
+                       parameters = from pn in m.Attribute.ParameterNames
+                                    let p = m.GetParameterInfo(pn)
+                                    let r = p.DefaultValue == System.DBNull.Value
+                                    select new {
+                                        name = pn,
+                                        type = p.ParameterType.Name.ToLower(),
+                                        required = r,
+                                        @default = r ? null : p.DefaultValue
+                                    },
+                       verb = m.Attribute.Verb,
+                       example = e == null ? string.Empty : e.AbsoluteUri
+                   };
         }
         void CheckForTemplateCollisions() {
             var q = from m in methods

@@ -43,11 +43,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GetAttribute.cs" />
-    <Compile Include="InvalidPlaceholderException.cs" />
-    <Compile Include="PostAttribute.cs" />
-    <Compile Include="TemplateCollisionException.cs" />
-    <Compile Include="VerbAttribute.cs" />
+    <Compile Include="Attributes\DeleteAttribute.cs" />
+    <Compile Include="Attributes\EntityAttribute.cs" />
+    <Compile Include="Attributes\GetAttribute.cs" />
+    <Compile Include="Exceptions\InvalidPlaceholderException.cs" />
+    <Compile Include="Attributes\PostAttribute.cs" />
+    <Compile Include="Attributes\PutAttribute.cs" />
+    <Compile Include="Exceptions\TemplateCollisionException.cs" />
+    <Compile Include="Attributes\VerbAttribute.cs" />
     <Compile Include="JsonDocument.cs" />
     <Compile Include="JsonDynamicDocument.cs" />
     <Compile Include="ServiceBridge.cs" />

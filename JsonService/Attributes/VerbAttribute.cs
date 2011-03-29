@@ -12,10 +12,6 @@ namespace JsonWebService {
         const string REGEX = @"(?<Key>[^?&=]+)=\{(?<Value>[^&]*)\}";
         Dictionary<string, string> dict;
 
-        /// <summary>
-        /// Sets the type of verb this method will accept.
-        /// </summary>
-        /// <param name="UriTemplate">Sets the template for a service method call</param>
         public VerbAttribute(string UriTemplate) {
             this.Description = string.Empty;
             this.UriTemplate = UriTemplate.StartsWith("/") ? UriTemplate : "/" + UriTemplate;

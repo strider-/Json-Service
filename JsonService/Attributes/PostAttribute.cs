@@ -7,7 +7,11 @@ namespace JsonWebService {
     /// <summary>
     /// Represents the POST http verb for json service requests.
     /// </summary>
-    public class PostAttribute : VerbAttribute {
+    public class PostAttribute : EntityAttribute {
+        /// <summary>
+        /// Sets the request uri template for POST requests that this method will accept.
+        /// </summary>
+        /// <param name="UriTemplate">Sets the template for a service method call</param>
         public PostAttribute(string UriTemplate)
             : base(UriTemplate) {
         }
@@ -18,13 +22,6 @@ namespace JsonWebService {
             get {
                 return "POST";
             }
-        }
-        /// <summary>
-        /// Gets and sets the parameter a posted json document will be put into, if any.  The parameter should be declared as dynamic.
-        /// </summary>
-        public string PostedDocument {
-            get;
-            set;
         }
     }  
 }
