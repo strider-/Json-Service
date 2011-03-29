@@ -14,7 +14,7 @@ namespace JsonWebService {
         /// <summary>
         /// Gets and sets the parameter a json document entity will be put into, if any.  The parameter should be declared as dynamic.
         /// </summary>
-        public string PostedDocument {
+        public string EntityDocument {
             get;
             set;
         }

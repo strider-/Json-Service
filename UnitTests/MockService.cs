@@ -62,7 +62,7 @@ namespace UnitTests {
             };
         }
 
-        [Post("save?id={id}", PostedDocument = "document")]
+        [Post("save?id={id}", EntityDocument = "document")]
         public object Update(int id, dynamic document) {
             return new {
                 status = "ok",

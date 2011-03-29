@@ -88,7 +88,7 @@ namespace JsonWebService {
                 string key = Attribute.GetParameterName(pm.Name);
 
                 if(key == null && Attribute is EntityAttribute) {
-                    string pd = ((EntityAttribute)Attribute).PostedDocument;
+                    string pd = ((EntityAttribute)Attribute).EntityDocument;
                     if(pm.Name.Equals(pd))
                         result.Item1[i] = postedDocument;
                 } else if(!qs.AllKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase) && !hasDefault) {
