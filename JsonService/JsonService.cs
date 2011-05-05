@@ -20,7 +20,7 @@ namespace JsonWebService {
             /// </summary>
             Info,
             /// <summary>
-            /// Something may be wrong, but it's nothing serious
+            /// Something may be wrong, but it's nothing that would stop the service.
             /// </summary>
             Warning,
             /// <summary>
@@ -155,7 +155,7 @@ namespace JsonWebService {
 
             if(Authorize && !AuthorizeRequest(Request)) {
                 Respond(Response, Unauthorized());
-                Log(LogLevel.Error, "Unauthorized request");
+                Log(LogLevel.Warning, "Unauthorized request");
                 return;
             }
 
@@ -167,11 +167,11 @@ namespace JsonWebService {
 
             if(bridge == null) {
                 Respond(Response, NoMatchingMethod());
-                Log(LogLevel.Error, "No suitable method found for {0}", Request.Url.PathAndQuery);
+                Log(LogLevel.Warning, "No suitable method found for {0}", Request.Url.PathAndQuery);
             } else {
                 if(!Request.HttpMethod.Equals(bridge.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {
                     Respond(Response, InvalidVerb());
-                    Log(LogLevel.Error, "Invalid HTTP verb");
+                    Log(LogLevel.Warning, "Invalid HTTP verb");
                 } else {
                     try {
                         dynamic postedDoc = null;
@@ -183,7 +183,7 @@ namespace JsonWebService {
                                 }
                             } catch {
                                 Respond(Response, InvalidJsonPosted());
-                                Log(LogLevel.Error, "Data posted to the server was not valid json");
+                                Log(LogLevel.Warning, "Data posted to the server was not valid json");
                                 return;
                             }
                         }
@@ -205,11 +205,11 @@ namespace JsonWebService {
                         Log(LogLevel.Info, "Invoked {0}({1})", bridge.QualifiedName, string.Join(", ", args.Item3));
                     } catch(ArgumentException ae) {
                         Respond(Response, ParameterFailure(ae));
-                        Log(LogLevel.Error, "Parameter value missing or invalid");
+                        Log(LogLevel.Warning, "Parameter value missing or invalid");
                     } catch(Exception e) {
                         // the base exception will always be a invocation exception, the inner exception is the heart of the problem.
                         Respond(Response, CallFailure(e.InnerException));
-                        Log(LogLevel.Error, "Failure to execute method");
+                        Log(LogLevel.Warning, "Failure to execute method");
                     }
                 }
             }
