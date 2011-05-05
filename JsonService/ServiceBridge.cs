@@ -10,27 +10,6 @@ namespace JsonWebService {
     /// </summary>
     class ServiceBridge {
         /// <summary>
-        /// Gets the metadata for the service method
-        /// </summary>
-        public MethodInfo MethodInfo {
-            get;
-            set;
-        }
-        /// <summary>
-        /// Gets the attribute information for the service method
-        /// </summary>
-        public VerbAttribute Attribute {
-            get;
-            set;
-        }
-        /// <summary>
-        /// Returns all placeholders defined in a UriTemplate that have no matching method parameter.
-        /// </summary>
-        /// <returns></returns>
-        public string[] InvalidPlaceholders() {
-            return Attribute.Placeholders.Except(MethodInfo.GetParameters().Select(p => p.Name), StringComparer.InvariantCultureIgnoreCase).ToArray();
-        }
-        /// <summary>
         /// Returns whether or not this method matches the method that was requested.
         /// </summary>
         /// <param name="path">Path the client requested</param>
@@ -112,12 +91,6 @@ namespace JsonWebService {
 
             return result;
         }
-        ArgumentException ParameterError(string message, string parameter, object value, Type expected, Exception inner) {
-            ArgumentException ae = new ArgumentException(message, parameter, inner);
-            ae.Data["value"] = value;
-            ae.Data["expected_type"] = expected;
-            return ae;
-        }
         /// <summary>
         /// Returns the Uri for an example use, if an example was specified.
         /// </summary>
@@ -130,6 +103,53 @@ namespace JsonWebService {
                 return null;           
                 
             return result;
+        }
+
+        ArgumentException ParameterError(string message, string parameter, object value, Type expected, Exception inner) {
+            ArgumentException ae = new ArgumentException(message, parameter, inner);
+            ae.Data["value"] = value;
+            ae.Data["expected_type"] = expected;
+            return ae;
+        }
+
+        /// <summary>
+        /// Gets the metadata for the service method
+        /// </summary>
+        public MethodInfo MethodInfo {
+            get;
+            set;
+        }
+        /// <summary>
+        /// Gets the attribute information for the service method
+        /// </summary>
+        public VerbAttribute Attribute {
+            get;
+            set;
+        }
+        /// <summary>
+        /// Gets the total number of VerbAttributes decorating the method; only 1 is supported at this time.
+        /// </summary>
+        public int AttributeCount {
+            get;
+            set;
+        }
+        /// <summary>
+        /// Gets the qualified name of the method, formatted as ClassName.MethodName
+        /// </summary>
+        public string QualifiedName {
+            get {
+                if(this.MethodInfo != null) {
+                    return string.Format("{0}.{1}", this.MethodInfo.DeclaringType.Name, this.MethodInfo.Name);
+                }
+                return null;
+            }
+        }
+        /// <summary>
+        /// Returns all placeholders defined in a UriTemplate that have no matching method parameter.
+        /// </summary>
+        /// <returns></returns>
+        public string[] InvalidPlaceholders() {
+            return Attribute.Placeholders.Except(MethodInfo.GetParameters().Select(p => p.Name), StringComparer.InvariantCultureIgnoreCase).ToArray();
         }
     }
 }

@@ -54,14 +54,12 @@ namespace JsonWebService {
         /// <exception cref="JsonWebService.InvalidPlaceholderException">thrown if the UriTemplate of a VerbAttribute has a placeholder that does not match a variable in the method signature</exception>
         public void Start(bool OpenBrowser) {
             if(!listener.IsListening) {
-                InitService();
-
-                CheckForTemplateCollisions();
-
                 try {
+                    InitService();
+                    CheckForTemplateCollisions();
                     listener.Start();
-                } catch(HttpListenerException hle) {
-                    Log(LogLevel.Error, "Failed to start service: {0}", hle.Message);
+                } catch(Exception e) {
+                    Log(LogLevel.Error, "Failed to start service: {0}", e.Message);
                     return;
                 }
 
@@ -71,7 +69,7 @@ namespace JsonWebService {
                 if(AllowDescribe && DescriptionUri != null)
                     Log(LogLevel.Info, "Service description @ {0}", DescriptionUri.AbsoluteUri);
                 else
-                    Log(LogLevel.Info, "Service description is not available.");
+                    Log(LogLevel.Warning, "Service description is not available.");
 
                 if(OpenBrowser)
                     System.Diagnostics.Process.Start(Uri.AbsoluteUri);
@@ -90,14 +88,15 @@ namespace JsonWebService {
         }
 
         void InitService() {
+            Log(LogLevel.Info, "Initializing server");
+
             if(!System.Net.HttpListener.IsSupported)
                 throw new ApplicationException("HttpListener is not supported on this version of Windows.");
             if(string.IsNullOrWhiteSpace(Host))
                 Host = "+";
             if(this.Port <= 0 || this.Port > 65535)
                 throw new ArgumentException("Port must be greater than 0 and less than 65535");
-
-            Log(LogLevel.Info, "Initializing server");
+            
             listener.Prefixes.Clear();
             listener.Prefixes.Add(string.Format("http://{0}:{1}/", this.Host, this.Port));
             Uri = new System.Uri(listener.Prefixes.First().Replace("+", "localhost"));
@@ -108,8 +107,13 @@ namespace JsonWebService {
                       where attribs.Count() > 0
                       select new ServiceBridge {
                           MethodInfo = mi,
-                          Attribute = attribs.Single()
+                          AttributeCount = attribs.Count(),
+                          Attribute = attribs.First()
                       };
+
+            foreach(var method in methods.Where(m => m.AttributeCount > 1)) {
+                Log(LogLevel.Warning, "{0} has multiple VerbAttributes, defaulting to '{1}' method.", method.QualifiedName, method.Attribute.Verb);
+            }
 
             Log(LogLevel.Info, "Validating placeholder variables");
             var bads = methods.Where(m => m.InvalidPlaceholders().Count() > 0);
@@ -163,7 +167,7 @@ namespace JsonWebService {
 
             if(bridge == null) {
                 Respond(Response, NoMatchingMethod());
-                Log(LogLevel.Error, "No suitable method found");
+                Log(LogLevel.Error, "No suitable method found for {0}", Request.Url.PathAndQuery);
             } else {
                 if(!Request.HttpMethod.Equals(bridge.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {
                     Respond(Response, InvalidVerb());
@@ -198,7 +202,7 @@ namespace JsonWebService {
                         );
 
                         Respond(Response, result);
-                        Log(LogLevel.Info, "Invoked {0}.{1}({2})", bridge.MethodInfo.DeclaringType.Name, bridge.MethodInfo.Name, string.Join(", ", args.Item3));
+                        Log(LogLevel.Info, "Invoked {0}({1})", bridge.QualifiedName, string.Join(", ", args.Item3));
                     } catch(ArgumentException ae) {
                         Respond(Response, ParameterFailure(ae));
                         Log(LogLevel.Error, "Parameter value missing or invalid");
@@ -300,9 +304,12 @@ namespace JsonWebService {
                 try {
                     LogOutput.Write("[{0:MM/dd/yyyy HH:mm:ss}]\t{1}\t", DateTime.Now, level);
                     LogOutput.WriteLine(msg, args);
+                } catch(FormatException) {
+                    LogOutput.WriteLine("String formatting error for log entry '{0}'", msg);
+                } catch(Exception) {
+                    // So how do you log errors when the error log is the problem?
+                } finally {
                     LogOutput.Flush();
-                } catch {
-                    // What do you do when you log errors, but the error log has errors?
                 }
             }
         }
