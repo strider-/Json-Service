@@ -91,8 +91,7 @@ namespace JsonWebService {
                     string pd = ((EntityAttribute)Attribute).EntityDocument;
                     if(pm.Name.Equals(pd))
                         result.Item1[i] = postedDocument;
-                } else if(!qs.AllKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase) && !hasDefault) {
-                    
+                } else if(!qs.AllKeys.Contains(key, StringComparer.InvariantCultureIgnoreCase) && !hasDefault) {                    
                     throw ParameterError(string.Format("{0} is required.", key), key, null, pm.ParameterType, new Exception("Missing required parameter"));
                 } else {
                     string val = qs[key];

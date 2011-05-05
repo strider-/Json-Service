@@ -49,16 +49,16 @@ namespace JsonWebService {
         char[] json;
 
         /// <summary>
-        /// Initializes a new JSON document with the specified anonymous type or array content.
+        /// Initializes a new JSON document with the specified object content.
         /// </summary>
-        /// <param name="content">An anonymous type or array to represent as JSON</param>
+        /// <param name="content">An object to represent as JSON</param>
         public JsonDocument(object content)
             : this(content, JsonFormat.Tabs, 4) {
         }
         /// <summary>
-        /// Initializes a new JSON document with the specified anonymous type or array content and formatting options.
+        /// Initializes a new JSON document with the specified object content and formatting options.
         /// </summary>
-        /// <param name="content">An anonymous type or array to represent as JSON</param>
+        /// <param name="content">An object to represent as JSON</param>
         /// <param name="Formatting">Specifies the formatting of the generated JSON document</param>
         /// <param name="IndentSize">Indentation size when using spaces.</param>
         public JsonDocument(object content, JsonFormat Formatting, int IndentSize) {

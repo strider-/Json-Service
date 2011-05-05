@@ -292,5 +292,30 @@ namespace UnitTests {
 
             Assert.AreEqual(doc.Value, 105);
         }
+
+        [TestMethod]
+        [Description("Making sure logging output happens when the LogOutput is not null.")]
+        public void Logging() {
+            const int entry_count = 3;
+
+            JsonService_Accessor target = new JsonService_Accessor(new PrivateObject(ts));
+            StringBuilder sb = new StringBuilder();
+            using(StringWriter sw = new StringWriter(sb)) {
+                target.LogOutput = sw;
+                target.Log(JsonService_Accessor.LogLevel.Info, "Logging Works: {0}", true);
+            }
+            
+            string[] log = sb.ToString().Split('\t');
+            if(log.Length != entry_count)
+                Assert.Fail("Log entry has an incorrect number of fields. Count: {0}, Expected: {1}", log.Length, entry_count);
+
+            string sdt = log[0].Trim(new char[] { '[', ']' });
+            DateTime dt;
+
+            Assert.IsTrue(DateTime.TryParse(sdt, out dt));
+            Assert.AreEqual(log[1], "Info");
+            Assert.IsTrue(log[2].StartsWith("Logging Works: True"));
+            Assert.IsTrue(log[2].EndsWith("\n"));
+        }
     }
 }

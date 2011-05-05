@@ -14,6 +14,21 @@ namespace JsonWebService {
         IEnumerable<ServiceBridge> methods;
         HttpListener listener;
 
+        protected enum LogLevel {
+            /// <summary>
+            /// General information
+            /// </summary>
+            Info,
+            /// <summary>
+            /// Something may be wrong, but it's nothing serious
+            /// </summary>
+            Warning,
+            /// <summary>
+            /// Gamebreaking stuff right here.
+            /// </summary>
+            Error
+        }
+
         public JsonService() {
             this.Host = "+";
             this.Port = 5678;
@@ -43,14 +58,20 @@ namespace JsonWebService {
 
                 CheckForTemplateCollisions();
 
-                listener.Start();
-                listener.BeginGetContext(NewRequest, null);                
-                Log("Server started @ {0}", Uri.AbsoluteUri);
-                
+                try {
+                    listener.Start();
+                } catch(HttpListenerException hle) {
+                    Log(LogLevel.Error, "Failed to start service: {0}", hle.Message);
+                    return;
+                }
+
+                listener.BeginGetContext(NewRequest, null);
+                Log(LogLevel.Info, "Server started @ {0}", Uri.AbsoluteUri);
+
                 if(AllowDescribe && DescriptionUri != null)
-                    Log("Service description @ {0}", DescriptionUri.AbsoluteUri);
+                    Log(LogLevel.Info, "Service description @ {0}", DescriptionUri.AbsoluteUri);
                 else
-                    Log("Service description is not available.");
+                    Log(LogLevel.Info, "Service description is not available.");
 
                 if(OpenBrowser)
                     System.Diagnostics.Process.Start(Uri.AbsoluteUri);
@@ -64,7 +85,7 @@ namespace JsonWebService {
                 listener.Stop();
                 Uri = null;
                 DescriptionUri = null;
-                Log("Server stopped");
+                Log(LogLevel.Info, "Server stopped");
             }
         }
 
@@ -76,12 +97,12 @@ namespace JsonWebService {
             if(this.Port <= 0 || this.Port > 65535)
                 throw new ArgumentException("Port must be greater than 0 and less than 65535");
 
-            Log("Initializing server");
+            Log(LogLevel.Info, "Initializing server");
             listener.Prefixes.Clear();
             listener.Prefixes.Add(string.Format("http://{0}:{1}/", this.Host, this.Port));
             Uri = new System.Uri(listener.Prefixes.First().Replace("+", "localhost"));
 
-            Log("Obtaining service method information");
+            Log(LogLevel.Info, "Obtaining service method information");
             methods = from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
                       let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
                       where attribs.Count() > 0
@@ -90,11 +111,11 @@ namespace JsonWebService {
                           Attribute = attribs.Single()
                       };
 
-            Log("Validating placeholder variables");
+            Log(LogLevel.Info, "Validating placeholder variables");
             var bads = methods.Where(m => m.InvalidPlaceholders().Count() > 0);
             if(bads.Count() > 0) {
                 foreach(var b in bads) {
-                    Log("Invalid placeholder(s) on the {0} method: {1}", b.MethodInfo.Name, string.Join(",", b.InvalidPlaceholders()));
+                    Log(LogLevel.Error, "Invalid placeholder(s) on the {0} method: {1}", b.MethodInfo.Name, string.Join(",", b.InvalidPlaceholders()));
                 }
                 throw new InvalidPlaceholderException(bads.First().MethodInfo.Name, bads.First().InvalidPlaceholders());
             }
@@ -115,10 +136,10 @@ namespace JsonWebService {
         void ProcessRequest(HttpListenerContext Context) {
             var Request = Context.Request;
             var Response = Context.Response;
-            
+
             if(methods.Count() == 0) {
                 Respond(Response, NoExposedMethods());
-                Log("There are no methods exposed by this service!");
+                Log(LogLevel.Error, "There are no methods exposed by this service!");
                 return;
             }
 
@@ -130,23 +151,23 @@ namespace JsonWebService {
 
             if(Authorize && !AuthorizeRequest(Request)) {
                 Respond(Response, Unauthorized());
-                Log("Unauthorized request");
+                Log(LogLevel.Error, "Unauthorized request");
                 return;
             }
 
             if(AllowDescribe && DescriptionUri != null && Request.Url.LocalPath.Equals(DescriptionUri.LocalPath, StringComparison.InvariantCultureIgnoreCase)) {
                 Respond(Response, Describe());
-                Log("Describing service");
+                Log(LogLevel.Info, "Describing service");
                 return;
             }
 
             if(bridge == null) {
                 Respond(Response, NoMatchingMethod());
-                Log("No suitable method found");
+                Log(LogLevel.Error, "No suitable method found");
             } else {
                 if(!Request.HttpMethod.Equals(bridge.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {
                     Respond(Response, InvalidVerb());
-                    Log("Invalid HTTP verb");
+                    Log(LogLevel.Error, "Invalid HTTP verb");
                 } else {
                     try {
                         dynamic postedDoc = null;
@@ -158,7 +179,7 @@ namespace JsonWebService {
                                 }
                             } catch {
                                 Respond(Response, InvalidJsonPosted());
-                                Log("Data posted to the server was not valid json");
+                                Log(LogLevel.Error, "Data posted to the server was not valid json");
                                 return;
                             }
                         }
@@ -177,14 +198,14 @@ namespace JsonWebService {
                         );
 
                         Respond(Response, result);
-                        Log("Invoked {0}.{1}({2})", bridge.MethodInfo.DeclaringType.Name, bridge.MethodInfo.Name, string.Join(", ", args.Item3));
+                        Log(LogLevel.Info, "Invoked {0}.{1}({2})", bridge.MethodInfo.DeclaringType.Name, bridge.MethodInfo.Name, string.Join(", ", args.Item3));
                     } catch(ArgumentException ae) {
                         Respond(Response, ParameterFailure(ae));
-                        Log("Parameter value missing or invalid");
+                        Log(LogLevel.Error, "Parameter value missing or invalid");
                     } catch(Exception e) {
                         // the base exception will always be a invocation exception, the inner exception is the heart of the problem.
                         Respond(Response, CallFailure(e.InnerException));
-                        Log("Failure to execute method");
+                        Log(LogLevel.Error, "Failure to execute method");
                     }
                 }
             }
@@ -218,13 +239,6 @@ namespace JsonWebService {
             }
 
             Response.Close();
-        }
-        void Log(string msg, params object[] args) {
-            if(LogOutput != null) {
-                LogOutput.Write("[{0:MM/dd/yyyy HH:mm:ss}]\t", DateTime.Now);
-                LogOutput.WriteLine(msg, args);
-                LogOutput.Flush();
-            }
         }
         /// <summary>
         /// Returns all valid request urls for the service.
@@ -264,17 +278,34 @@ namespace JsonWebService {
 
             if(q.Count() > 0) {
                 foreach(var c in q) {
-                    Log("Template collision detected: Path={0}; Parameters={1}; Verb={2}; Methods={3}",
+                    Log(LogLevel.Error, "Template collision detected: Path={0}; Parameters={1}; Verb={2}; Methods={3}",
                         c.Path, string.Join(",", c.ParameterNames), c.Verb, string.Join(",", c.Methods));
                 }
 
                 var e = q.First();
                 throw new TemplateCollisionException(e.Path, e.ParameterNames, e.Verb, e.Methods);
             } else {
-                Log("No template collisions detected.");
+                Log(LogLevel.Info, "No template collisions detected.");
             }
         }
 
+        /// <summary>
+        /// Writes an event to the log specified in the LogOutput property.
+        /// </summary>
+        /// <param name="level">The severity of the message.</param>
+        /// <param name="msg">The message to log, can be a formatted string.</param>
+        /// <param name="args">The arguments to the formatted message string, if any.</param>
+        protected void Log(LogLevel level, string msg, params object[] args) {
+            if(LogOutput != null) {
+                try {
+                    LogOutput.Write("[{0:MM/dd/yyyy HH:mm:ss}]\t{1}\t", DateTime.Now, level);
+                    LogOutput.WriteLine(msg, args);
+                    LogOutput.Flush();
+                } catch {
+                    // What do you do when you log errors, but the error log has errors?
+                }
+            }
+        }
         /// <summary>
         /// Returns a Tuple with the content to send to the client, along with a HttpStatusCode.
         /// </summary>
@@ -297,7 +328,7 @@ namespace JsonWebService {
         /// <summary>
         /// Performs authorization &amp; returns a boolean representing the result.
         /// </summary>
-        /// <param name="Request"></param>
+        /// <param name="Request">The incoming request that needs to be validated.</param>
         /// <returns></returns>
         protected virtual bool AuthorizeRequest(HttpListenerRequest Request) {
             return false;
@@ -328,7 +359,7 @@ namespace JsonWebService {
         /// <summary>
         /// Returns the json for an error calling the requested method.
         /// </summary>
-        /// <param name="Message">Exception message</param>
+        /// <param name="e">Exception encountered when invoking the service method.</param>
         /// <returns></returns>        
         protected virtual object CallFailure(Exception e) {
             return new {
@@ -369,7 +400,7 @@ namespace JsonWebService {
 
         BindingFlags Flags {
             get {
-                return BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Instance;
+                return BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Instance;
             }
         }
         /// <summary>
@@ -428,6 +459,14 @@ namespace JsonWebService {
         public TextWriter LogOutput {
             get;
             set;
+        }
+        /// <summary>
+        /// Gets whether or not the service is currently accepting requests.
+        /// </summary>
+        public bool IsRunning {
+            get {
+                return listener.IsListening;
+            }
         }
     }
 }
