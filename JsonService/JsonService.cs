@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,9 +12,13 @@ namespace JsonWebService {
     /// Abstract class for json based web services.
     /// </summary>
     public abstract class JsonService {
+        static object logLock = new object();
         IEnumerable<ServiceBridge> methods;
         HttpListener listener;
 
+        /// <summary>
+        /// Log message severity indicator
+        /// </summary>
         protected enum LogLevel {
             /// <summary>
             /// General information
@@ -42,16 +47,12 @@ namespace JsonWebService {
         /// <summary>
         /// Starts the service, without opening the default browser.
         /// </summary>
-        /// <exception cref="JsonWebService.TemplateCollisionException">thrown if multiple methods have the same VerbAttribute with identical UriTemplates.</exception>
-        /// <exception cref="JsonWebService.InvalidPlaceholderException">thrown if the UriTemplate of a VerbAttribute has a placeholder that does not match a variable in the method signature</exception>
         public void Start() {
             Start(false);
         }
         /// <summary>
         /// Starts the service, with the option to open the default browser.
         /// </summary>
-        /// <exception cref="JsonWebService.TemplateCollisionException">thrown if multiple methods have the same VerbAttribute with identical UriTemplates.</exception>
-        /// <exception cref="JsonWebService.InvalidPlaceholderException">thrown if the UriTemplate of a VerbAttribute has a placeholder that does not match a variable in the method signature</exception>
         public void Start(bool OpenBrowser) {
             if(!listener.IsListening) {
                 try {
@@ -244,10 +245,6 @@ namespace JsonWebService {
 
             Response.Close();
         }
-        /// <summary>
-        /// Returns all valid request urls for the service.
-        /// </summary>
-        /// <returns></returns>
         object Describe() {
             return from m in methods
                    let e = m.GetExampleUri(Uri)
@@ -294,22 +291,33 @@ namespace JsonWebService {
         }
 
         /// <summary>
-        /// Writes an event to the log specified in the LogOutput property.
+        /// Writes an event to the log specified in the LogOutput property.  Safe to call if LogOutput is null.
         /// </summary>
         /// <param name="level">The severity of the message.</param>
         /// <param name="msg">The message to log, can be a formatted string.</param>
         /// <param name="args">The arguments to the formatted message string, if any.</param>
         protected void Log(LogLevel level, string msg, params object[] args) {
-            if(LogOutput != null) {
-                try {
-                    LogOutput.Write("[{0:MM/dd/yyyy HH:mm:ss}]\t{1}\t", DateTime.Now, level);
-                    LogOutput.WriteLine(msg, args);
-                } catch(FormatException) {
-                    LogOutput.WriteLine("String formatting error for log entry '{0}'", msg);
-                } catch(Exception) {
-                    // So how do you log errors when the error log is the problem?
-                } finally {
-                    LogOutput.Flush();
+            lock(logLock) {
+                if(LogOutput != null) {
+                    StackFrame frame = new StackTrace().GetFrame(1);
+                    MethodBase mb = frame.GetMethod();
+
+                    // if the previous stack frame is from an invoked method or a non-overridden method, it's a system generated log event,
+                    // otherwise it's a user defined log event.
+                    string source = mb.Name.Equals("CallSite.Target") || mb.DeclaringType == typeof(JsonService)
+                        ? "System"
+                        : "User";
+
+                    try {
+                        LogOutput.Write("{0:MM/dd/yyyy HH:mm:ss}\t{1}\t{2}\t", DateTime.Now, source, level);
+                        LogOutput.WriteLine(msg, args);
+                    } catch(FormatException) {
+                        LogOutput.WriteLine("String formatting error for log entry '{0}'", msg);
+                    } catch(Exception) {
+                        // So how do you log errors when the error log is the problem?
+                    } finally {
+                        LogOutput.Flush();
+                    }
                 }
             }
         }

@@ -296,7 +296,7 @@ namespace UnitTests {
         [TestMethod]
         [Description("Making sure logging output happens when the LogOutput is not null.")]
         public void Logging() {
-            const int entry_count = 3;
+            const int entry_count = 4;
 
             JsonService_Accessor target = new JsonService_Accessor(new PrivateObject(ts));
             StringBuilder sb = new StringBuilder();
@@ -309,13 +309,12 @@ namespace UnitTests {
             if(log.Length != entry_count)
                 Assert.Fail("Log entry has an incorrect number of fields. Count: {0}, Expected: {1}", log.Length, entry_count);
 
-            string sdt = log[0].Trim(new char[] { '[', ']' });
             DateTime dt;
-
-            Assert.IsTrue(DateTime.TryParse(sdt, out dt));
-            Assert.AreEqual(log[1], "Info");
-            Assert.IsTrue(log[2].StartsWith("Logging Works: True"));
-            Assert.IsTrue(log[2].EndsWith("\n"));
+            Assert.IsTrue(DateTime.TryParse(log[0], out dt));
+            Assert.AreEqual(log[1], "User");
+            Assert.AreEqual(log[2], "Info");
+            Assert.IsTrue(log[3].StartsWith("Logging Works: True"));
+            Assert.IsTrue(log[3].EndsWith("\n"));
         }
     }
 }
