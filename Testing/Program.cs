@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using JsonWebService;
+using System.ComponentModel;
 
 namespace Testing {
     class Program {
         static void Main(string[] args) {
             ConsoleService ts = new ConsoleService();
-            ts.AllowDescribe = false;
             ts.Start(true);
             while(Console.ReadKey(true).Key != ConsoleKey.Escape)
                 ;

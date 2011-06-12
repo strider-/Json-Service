@@ -94,7 +94,7 @@ namespace UnitTests {
         }
 
         [TestMethod]
-        [Description("The casing of the parameter names shouldn't matter")]
+        [Description("The casing of the parameter names in the query string shouldn't matter")]
         public void ParameterNameCasingIrrelevant() {
             dynamic doc = GetDocument("add?VALUE1=3&vAlUe2=10");
 
@@ -271,7 +271,7 @@ namespace UnitTests {
         public void CustomStatusCode() {
             try {
                 dynamic doc = GetDocument("statuscode");
-                Assert.Fail();
+                Assert.Fail("A WebException with a status code of 404 should have been thrown.");
             } catch(WebException e) {
                 Assert.AreEqual(((HttpWebResponse)e.Response).StatusCode, HttpStatusCode.NotImplemented);
             }
@@ -302,7 +302,7 @@ namespace UnitTests {
             StringBuilder sb = new StringBuilder();
             using(StringWriter sw = new StringWriter(sb)) {
                 target.LogOutput = sw;
-                target.Log(JsonService_Accessor.LogLevel.Info, "Logging Works: {0}", true);
+                target.Log(LogLevel.Info, "Logging Works: {0}", true);
             }
             
             string[] log = sb.ToString().Split('\t');

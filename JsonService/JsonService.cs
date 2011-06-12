@@ -9,30 +9,30 @@ using System.IO;
 
 namespace JsonWebService {
     /// <summary>
+    /// Log message severity indicator
+    /// </summary>
+    public enum LogLevel {
+        /// <summary>
+        /// General information
+        /// </summary>
+        Info,
+        /// <summary>
+        /// Something may be wrong, but it's nothing that would stop the service.
+        /// </summary>
+        Warning,
+        /// <summary>
+        /// Gamebreaking stuff right here.
+        /// </summary>
+        Error
+    }
+
+    /// <summary>
     /// Abstract class for json based web services.
     /// </summary>
     public abstract class JsonService {
         static object logLock = new object();
         IEnumerable<ServiceBridge> methods;
         HttpListener listener;
-
-        /// <summary>
-        /// Log message severity indicator
-        /// </summary>
-        protected enum LogLevel {
-            /// <summary>
-            /// General information
-            /// </summary>
-            Info,
-            /// <summary>
-            /// Something may be wrong, but it's nothing that would stop the service.
-            /// </summary>
-            Warning,
-            /// <summary>
-            /// Gamebreaking stuff right here.
-            /// </summary>
-            Error
-        }
 
         public JsonService() {
             this.Host = "+";
@@ -289,7 +289,7 @@ namespace JsonWebService {
                 Log(LogLevel.Info, "No template collisions detected.");
             }
         }
-
+        
         /// <summary>
         /// Writes an event to the log specified in the LogOutput property.  Safe to call if LogOutput is null.
         /// </summary>
@@ -301,7 +301,6 @@ namespace JsonWebService {
                 if(LogOutput != null) {
                     StackFrame frame = new StackTrace().GetFrame(1);
                     MethodBase mb = frame.GetMethod();
-
                     // if the previous stack frame is from an invoked method or a non-overridden method, it's a system generated log event,
                     // otherwise it's a user defined log event.
                     string source = mb.Name.Equals("CallSite.Target") || mb.DeclaringType == typeof(JsonService)
@@ -322,13 +321,13 @@ namespace JsonWebService {
             }
         }
         /// <summary>
-        /// Returns a Tuple with the content to send to the client, along with a HttpStatusCode.
+        /// Returns the content to the client with a specified HttpStatusCode.
         /// </summary>
-        /// <param name="obj">Object to return to the client, can be null</param>
+        /// <param name="content">Object to return to the client, can be null</param>
         /// <param name="code">Status code for the client</param>
         /// <returns></returns>
-        protected object WithStatusCode(object obj, HttpStatusCode code) {
-            return Tuple.Create(obj, code);
+        protected object WithStatusCode(object content, HttpStatusCode code) {
+            return Tuple.Create(content, code);
         }
         /// <summary>
         /// Returns the json for when the service has no publically available methods
