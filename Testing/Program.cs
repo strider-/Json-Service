@@ -6,6 +6,8 @@ using JsonWebService;
 using System.ComponentModel;
 using System.Security.Cryptography;
 using System.IO;
+using System.Xml.Linq;
+using System.Xml;
 
 namespace Testing {
     class Program {
@@ -34,10 +36,30 @@ namespace Testing {
             return Resource(System.IO.File.OpenRead(@"G:\Documents\strider.ico"), "image/x-icon");
         }
 
+        [Get("/xml", Example="/xml")]
+        public object XmlTest() {            
+            MemoryStream ms = new MemoryStream();
+            XmlWriterSettings settings = new XmlWriterSettings();
+            settings.Indent = true;
+
+            using(XmlWriter xw = XmlWriter.Create(ms, settings)) {
+
+                XDocument doc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"),
+                    new XElement("root",
+                        new XElement("greeting", "hi.")
+                    )
+                );
+
+                doc.WriteTo(xw);
+            }
+
+            return Resource(ms, "text/xml");
+        }
+
         [Get("/gravatar?email={email}", Example = "/gravatar?email=1@2.com")]
         public object Gravatar(string email) {
             byte[] rawHash = new MD5CryptoServiceProvider().ComputeHash(Encoding.UTF8.GetBytes(email.ToLower()));
-            string hash = BitConverter.ToString(rawHash).Replace("-", "").ToLower();
+            string hash = rawHash.Select(b => b.ToString("x2")).Aggregate((c, n) => c += n);
             return Resource(
                 System.Net.WebRequest.Create("http://www.gravatar.com/avatar/" + hash).GetResponse().GetResponseStream(),
                 "image/jpg");

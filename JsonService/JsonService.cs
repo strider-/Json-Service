@@ -241,8 +241,10 @@ namespace JsonWebService {
             response.StatusCode = (int)code;
             response.StatusDescription = code.ToString();
             response.ContentType = contentType;
-            if(data.CanSeek)
+            if(data.CanSeek) {
+                data.Position = 0;
                 response.ContentLength64 = data.Length;
+            }
             data.CopyTo(response.OutputStream);
             response.Close();
             data.Close();
