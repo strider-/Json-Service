@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using JsonWebService;
+using System.IO;
 
 namespace UnitTests {
     class MockService : JsonService {
@@ -96,6 +97,13 @@ namespace UnitTests {
         public object StatusCode() {
             return WithStatusCode(null, HttpStatusCode.NotImplemented);
         }
+
+        [Get("/resource")]
+        public object Resource() {
+            string asmLoc = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            return Resource(System.IO.File.OpenRead(Path.Combine(asmLoc, "Resources\\tekka.png")), "image/png");
+        }
+             
 
         protected override bool AuthorizeRequest(System.Net.HttpListenerRequest Request) {
             return Request.QueryString["apikey"] != null;

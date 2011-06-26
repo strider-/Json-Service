@@ -316,5 +316,15 @@ namespace UnitTests {
             Assert.IsTrue(log[3].StartsWith("Logging Works: True"));
             Assert.IsTrue(log[3].EndsWith("\n"));
         }
+
+        [TestMethod]
+        [Description("Verifying resources are returned when specified.")]
+        public void ResourceTest() {
+            WebClient wc = new WebClient();
+            byte[] img = wc.DownloadData(ts.Uri.AbsoluteUri + "/resource");
+
+            Assert.IsNotNull(img);
+            Assert.AreEqual(wc.ResponseHeaders["Content-Type"], "image/png");
+        }
     }
 }

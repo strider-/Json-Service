@@ -219,35 +219,37 @@ namespace JsonWebService {
             JsonDocument doc;
             HttpStatusCode code = HttpStatusCode.OK;
 
-            var tuple = content as Tuple<object, HttpStatusCode>;
+            var tuple = content as Tuple<object, string, HttpStatusCode>;
+
             if(tuple != null) {
-                doc = new JsonDocument(tuple.Item1);
-                code = tuple.Item2;
+                if(tuple.Item1 is Stream) {
+                    Respond(Response, (Stream)tuple.Item1, tuple.Item2, tuple.Item3);
+                    return;
+                } else {
+                    doc = new JsonDocument(tuple.Item1);
+                    code = tuple.Item3;
+                }
             } else {
                 doc = new JsonDocument(content);
             }
 
             doc.Formatting = JsonDocument.JsonFormat.None;
-            byte[] raw = Encoding.UTF8.GetBytes(doc.ToString());
-
-            Response.StatusCode = (int)code;
-            Response.StatusDescription = code.ToString();
-            Response.ContentType = "application/json";
-            Response.ContentLength64 = raw.Length;
-            using(Stream s = Response.OutputStream) {
-                int offset = 0, size;
-                while(offset != raw.Length) {
-                    size = Math.Min(raw.Length - offset, 0x8000);
-                    s.Write(raw, offset, size);
-                    offset += size;
-                }
-            }
-
-            Response.Close();
+            MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(doc.ToString()));
+            Respond(Response, ms, "application/json", code);
+        }
+        void Respond(HttpListenerResponse response, Stream data, string contentType, HttpStatusCode code) {
+            response.StatusCode = (int)code;
+            response.StatusDescription = code.ToString();
+            response.ContentType = contentType;
+            if(data.CanSeek)
+                response.ContentLength64 = data.Length;
+            data.CopyTo(response.OutputStream);
+            response.Close();
         }
         object Describe() {
             return from m in methods
                    let e = m.GetExampleUri(Uri)
+                   where m.Attribute.Describe
                    select new {
                        path = m.Attribute.Path,
                        desc = m.Attribute.Description,
@@ -327,7 +329,26 @@ namespace JsonWebService {
         /// <param name="code">Status code for the client</param>
         /// <returns></returns>
         protected object WithStatusCode(object content, HttpStatusCode code) {
-            return Tuple.Create(content, code);
+            return Tuple.Create(content, default(string), code);
+        }
+        /// <summary>
+        /// Returns a resource to the client with the specified content type.
+        /// </summary>
+        /// <param name="resource">Resource to return, as a stream</param>
+        /// <param name="contentType">content type of the resource</param>
+        /// <returns></returns>
+        protected object Resource(Stream resource, string contentType) {
+            return Resource(resource, contentType, HttpStatusCode.OK);
+        }
+        /// <summary>
+        /// Returns a resource to the client with the specified content type and HttpStatusCode.
+        /// </summary>
+        /// <param name="resource">Resource to return, as a stream</param>
+        /// <param name="contentType">content type of the resource</param>
+        /// <param name="code">Status code for the client</param>
+        /// <returns></returns>
+        protected object Resource(Stream resource, string contentType, HttpStatusCode code) {
+            return Tuple.Create((object)resource, contentType, code);
         }
         /// <summary>
         /// Returns the json for when the service has no publically available methods

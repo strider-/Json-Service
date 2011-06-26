@@ -14,6 +14,7 @@ namespace JsonWebService {
 
         public VerbAttribute(string UriTemplate) {
             this.Description = string.Empty;
+            this.Describe = true;
             this.UriTemplate = UriTemplate.StartsWith("/") ? UriTemplate : "/" + UriTemplate;
             MatchCollection mc = Regex.Matches(this.UriTemplate, REGEX, RegexOptions.Singleline);
 
@@ -67,6 +68,13 @@ namespace JsonWebService {
         /// Gets and sets an example url for the method, to be shown on self-describe requests
         /// </summary>
         public string Example {
+            get;
+            set;
+        }
+        /// <summary>
+        /// Gets and sets whether or not this method should be included in the service description.  Defaults to true
+        /// </summary>
+        public bool Describe {
             get;
             set;
         }
