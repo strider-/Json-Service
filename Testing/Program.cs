@@ -29,12 +29,12 @@ namespace Testing {
             };
         }
 
-        [Get("/favicon.ico", Describe=false)]
+        [Get("/favicon.ico", Describe = false)]
         public object favico() {
             return Resource(System.IO.File.OpenRead(@"G:\Documents\strider.ico"), "image/x-icon");
         }
 
-        [Get("/gravatar?email={email}", Example="/gravatar?email=striderIIDX@gmail.com")]
+        [Get("/gravatar?email={email}", Example = "/gravatar?email=1@2.com")]
         public object Gravatar(string email) {
             byte[] rawHash = new MD5CryptoServiceProvider().ComputeHash(Encoding.UTF8.GetBytes(email.ToLower()));
             string hash = BitConverter.ToString(rawHash).Replace("-", "").ToLower();
