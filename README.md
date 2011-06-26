@@ -15,5 +15,6 @@ Check out the [Getting Started](https://github.com/strider-/Json-Service/wiki) s
 * [Custom Authorization](https://github.com/strider-/Json-Service/wiki/Custom-authorization)  
 * [Posting JSON documents](https://github.com/strider-/Json-Service/wiki/Posting-json-documents)  
 * [Returning a custom HTTP status code](https://github.com/strider-/Json-Service/wiki/Returning-a-custom-http-status-code)  
+* [Returning resources](https://github.com/strider-/Json-Service/wiki/Returning-resources)
 * [Custom VerbAttributes](https://github.com/strider-/Json-Service/wiki/Custom-verbattributes)  
 * [Template Collisions](https://github.com/strider-/Json-Service/wiki/Template-Collisions)  
