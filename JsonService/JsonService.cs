@@ -245,6 +245,7 @@ namespace JsonWebService {
                 response.ContentLength64 = data.Length;
             data.CopyTo(response.OutputStream);
             response.Close();
+            data.Close();
         }
         object Describe() {
             return from m in methods
