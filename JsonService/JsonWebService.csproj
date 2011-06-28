@@ -53,6 +53,7 @@
     <Compile Include="Attributes\VerbAttribute.cs" />
     <Compile Include="JsonDocument.cs" />
     <Compile Include="JsonDynamicDocument.cs" />
+    <Compile Include="JsonServiceResult.cs" />
     <Compile Include="ServiceBridge.cs" />
     <Compile Include="JsonService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

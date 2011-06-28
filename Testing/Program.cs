@@ -36,23 +36,25 @@ namespace Testing {
             return Resource(System.IO.File.OpenRead(@"G:\Documents\strider.ico"), "image/x-icon");
         }
 
-        [Get("/xml", Example="/xml")]
-        public object XmlTest() {            
+        [Get("/xml", Example = "/xml")]
+        public object XmlTest() {
+            XDocument doc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement("root",
+                    new XElement("greeting", "hi.")
+                )
+            );
+            return Xml(doc);
+        }
+
+        public object Xml(XDocument document) {
+            // This is a JSON based web service, ya jerk!
             MemoryStream ms = new MemoryStream();
             XmlWriterSettings settings = new XmlWriterSettings();
             settings.Indent = true;
 
-            using(XmlWriter xw = XmlWriter.Create(ms, settings)) {
-
-                XDocument doc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"),
-                    new XElement("root",
-                        new XElement("greeting", "hi.")
-                    )
-                );
-
-                doc.WriteTo(xw);
+            using(XmlWriter writer = XmlWriter.Create(ms, settings)) {
+                document.WriteTo(writer);
             }
-
             return Resource(ms, "text/xml");
         }
 

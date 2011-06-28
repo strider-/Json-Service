@@ -215,39 +215,10 @@ namespace JsonWebService {
                 }
             }
         }
-        void Respond(HttpListenerResponse Response, object content) {
-            JsonDocument doc;
-            HttpStatusCode code = HttpStatusCode.OK;
-
-            var tuple = content as Tuple<object, string, HttpStatusCode>;
-
-            if(tuple != null) {
-                if(tuple.Item1 is Stream) {
-                    Respond(Response, (Stream)tuple.Item1, tuple.Item2, tuple.Item3);
-                    return;
-                } else {
-                    doc = new JsonDocument(tuple.Item1);
-                    code = tuple.Item3;
-                }
-            } else {
-                doc = new JsonDocument(content);
+        void Respond(HttpListenerResponse response, object content) {
+            using(JsonServiceResult result = (content as JsonServiceResult) ?? new JsonServiceResult(content)) {
+                result.WriteTo(response);
             }
-
-            doc.Formatting = JsonDocument.JsonFormat.None;
-            MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(doc.ToString()));
-            Respond(Response, ms, "application/json", code);
-        }
-        void Respond(HttpListenerResponse response, Stream data, string contentType, HttpStatusCode code) {
-            response.StatusCode = (int)code;
-            response.StatusDescription = code.ToString();
-            response.ContentType = contentType;
-            if(data.CanSeek) {
-                data.Position = 0;
-                response.ContentLength64 = data.Length;
-            }
-            data.CopyTo(response.OutputStream);
-            response.Close();
-            data.Close();
         }
         object Describe() {
             return from m in methods
@@ -332,7 +303,9 @@ namespace JsonWebService {
         /// <param name="code">Status code for the client</param>
         /// <returns></returns>
         protected object WithStatusCode(object content, HttpStatusCode code) {
-            return Tuple.Create(content, default(string), code);
+            JsonServiceResult result = new JsonServiceResult(content);
+            result.Code = code;
+            return result;
         }
         /// <summary>
         /// Returns a resource to the client with the specified content type.
@@ -351,7 +324,9 @@ namespace JsonWebService {
         /// <param name="code">Status code for the client</param>
         /// <returns></returns>
         protected object Resource(Stream resource, string contentType, HttpStatusCode code) {
-            return Tuple.Create((object)resource, contentType, code);
+            JsonServiceResult result = new JsonServiceResult(resource, contentType);
+            result.Code = code;
+            return result;
         }
         /// <summary>
         /// Returns the json for when the service has no publically available methods
