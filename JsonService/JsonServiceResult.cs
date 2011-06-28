@@ -39,6 +39,7 @@ namespace JsonWebService {
         public void Dispose() {
             if(_data != null)
                 _data.Dispose();
+            _data = null;
         }
 
         public string ContentType {

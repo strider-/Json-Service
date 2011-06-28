@@ -6,6 +6,7 @@ All objects returned (anonymous or otherwise) will be properly serialized to jso
 
 Documentation
 -------
+Note: You'll need to run Visual Studio as an administrator in order to get HttpListener running.
 
 Check out the [Getting Started](https://github.com/strider-/Json-Service/wiki) section of the wiki for the basics, extended documentation can be found here:
 
