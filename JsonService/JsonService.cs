@@ -116,6 +116,10 @@ namespace JsonWebService {
                 Log(LogLevel.Warning, "{0} has multiple VerbAttributes, defaulting to '{1}' method.", method.QualifiedName, method.Attribute.Verb);
             }
 
+            foreach(var method in methods.Where(m => m.MethodInfo.ContainsGenericParameters)) {
+                Log(LogLevel.Warning, "{0} contains generic parameters which are not currently supported.", method.QualifiedName);
+            }
+
             Log(LogLevel.Info, "Validating placeholder variables");
             var bads = methods.Where(m => m.InvalidPlaceholders().Count() > 0);
             if(bads.Count() > 0) {
@@ -169,6 +173,10 @@ namespace JsonWebService {
             if(bridge == null) {
                 Respond(Response, NoMatchingMethod());
                 Log(LogLevel.Warning, "No suitable method found for {0}", Request.Url.PathAndQuery);
+            } else if(bridge.MethodInfo.ContainsGenericParameters) {
+                Exception e = new Exception("Methods with generic parameters are not supported.");
+                Respond(Response, CallFailure(e));
+                Log(LogLevel.Warning, e.Message);
             } else {
                 if(!Request.HttpMethod.Equals(bridge.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {
                     Respond(Response, InvalidVerb());
@@ -208,8 +216,7 @@ namespace JsonWebService {
                         Respond(Response, ParameterFailure(ae));
                         Log(LogLevel.Warning, "Parameter value missing or invalid");
                     } catch(Exception e) {
-                        // the base exception will always be a invocation exception, the inner exception is the heart of the problem.
-                        Respond(Response, CallFailure(e.InnerException));
+                        Respond(Response, CallFailure(e.InnerException ?? e));
                         Log(LogLevel.Warning, "Failure to execute method");
                     }
                 }
