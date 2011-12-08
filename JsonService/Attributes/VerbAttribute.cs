@@ -79,6 +79,13 @@ namespace JsonWebService {
             set;
         }
         /// <summary>
+        /// Gets and sets whether or not to enforce authorization for this particular method call
+        /// </summary>
+        public bool AllowUnauthorized {
+            get;
+            set;
+        }
+        /// <summary>
         /// Gets the names of the parameters for the method call
         /// </summary>
         public string[] ParameterNames {

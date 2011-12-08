@@ -42,18 +42,13 @@ namespace JsonWebService {
             this.DescribePath = "/help";
             this.LogOutput = Console.Out;
             this.listener = new HttpListener();
+            this.OpenBrowserOnStart = false;
         }
 
         /// <summary>
-        /// Starts the service, without opening the default browser.
+        /// Starts the service
         /// </summary>
         public void Start() {
-            Start(false);
-        }
-        /// <summary>
-        /// Starts the service, with the option to open the default browser.
-        /// </summary>
-        public void Start(bool OpenBrowser) {
             if(!listener.IsListening) {
                 try {
                     InitService();
@@ -72,7 +67,7 @@ namespace JsonWebService {
                 else
                     Log(LogLevel.Warning, "Service description is not available.");
 
-                if(OpenBrowser)
+                if(OpenBrowserOnStart)
                     System.Diagnostics.Process.Start(Uri.AbsoluteUri);
             }
         }
@@ -86,6 +81,16 @@ namespace JsonWebService {
                 DescriptionUri = null;
                 Log(LogLevel.Info, "Server stopped");
             }
+        }
+        /// <summary>
+        /// Starts the service &amp; keeps it running as long as the conditon returns true.
+        /// </summary>
+        /// <param name="condition"></param>
+        public void RunWhile(Func<bool> condition) {
+            Start();
+            while(condition() && listener.IsListening)
+                ;
+            Stop();
         }
 
         void InitService() {
@@ -139,10 +144,13 @@ namespace JsonWebService {
             if(listener.IsListening) {
                 HttpListenerContext context = listener.EndGetContext(Result);
                 listener.BeginGetContext(NewRequest, null);
+                
                 ProcessRequest(context);
             }
         }
         void ProcessRequest(HttpListenerContext Context) {
+            var startTime = DateTime.Now;
+
             var Request = Context.Request;
             var Response = Context.Response;
 
@@ -158,7 +166,7 @@ namespace JsonWebService {
                                     orderby m.Attribute.ParameterNames.Length descending
                                     select m).FirstOrDefault();
 
-            if(Authorize && !AuthorizeRequest(Request)) {
+            if(Authorize && (bridge != null && !bridge.Attribute.AllowUnauthorized) && !AuthorizeRequest(Request)) {
                 Respond(Response, Unauthorized());
                 Log(LogLevel.Warning, "Unauthorized request");
                 return;
@@ -166,13 +174,14 @@ namespace JsonWebService {
 
             if(AllowDescribe && DescriptionUri != null && Request.Url.LocalPath.Equals(DescriptionUri.LocalPath, StringComparison.InvariantCultureIgnoreCase)) {
                 Respond(Response, Describe());
-                Log(LogLevel.Info, "Describing service");
+                Log(LogLevel.Info, "Describing service, {0}ms", DateTime.Now.Subtract(startTime).TotalMilliseconds);
                 return;
             }
 
             if(bridge == null) {
                 Respond(Response, NoMatchingMethod());
                 Log(LogLevel.Warning, "No suitable method found for {0}", Request.Url.PathAndQuery);
+                return;
             } else if(bridge.MethodInfo.ContainsGenericParameters) {
                 Exception e = new Exception("Methods with generic parameters are not supported.");
                 Respond(Response, CallFailure(e));
@@ -211,7 +220,7 @@ namespace JsonWebService {
                         );
 
                         Respond(Response, result);
-                        Log(LogLevel.Info, "Invoked {0}({1})", bridge.QualifiedName, string.Join(", ", args.Item3));
+                        Log(LogLevel.Info, "Invoked {0}({1}), {2}ms", bridge.QualifiedName, string.Join(", ", args.Item3), DateTime.Now.Subtract(startTime).TotalMilliseconds);
                     } catch(ArgumentException ae) {
                         Respond(Response, ParameterFailure(ae));
                         Log(LogLevel.Warning, "Parameter value missing or invalid");
@@ -223,8 +232,10 @@ namespace JsonWebService {
             }
         }
         void Respond(HttpListenerResponse response, object content) {
-            using(JsonServiceResult result = (content as JsonServiceResult) ?? new JsonServiceResult(content)) {
-                result.WriteTo(response);
+            if(listener.IsListening) {
+                using(JsonServiceResult result = (content as JsonServiceResult) ?? new JsonServiceResult(content)) {
+                    result.WriteTo(response);
+                }
             }
         }
         object Describe() {
@@ -272,7 +283,6 @@ namespace JsonWebService {
                 Log(LogLevel.Info, "No template collisions detected.");
             }
         }
-        
         /// <summary>
         /// Writes an event to the log specified in the LogOutput property.  Safe to call if LogOutput is null.
         /// </summary>
@@ -342,7 +352,7 @@ namespace JsonWebService {
         protected virtual object NoExposedMethods() {
             return new {
                 status = "failed",
-                error = "This service is not exposing any methods!"
+                message = "This service is not exposing any methods!"
             };
         }
         /// <summary>
@@ -360,7 +370,7 @@ namespace JsonWebService {
         protected virtual object NoMatchingMethod() {
             return new {
                 status = "failed",
-                error = "Invalid method call"
+                message = "Invalid method call"
             };
         }
         /// <summary>
@@ -370,7 +380,7 @@ namespace JsonWebService {
         protected virtual object ParameterFailure(ArgumentException exception) {
             return new {
                 status = "failed",
-                error = exception.Message,
+                message = exception.Message,
                 parameter = exception.ParamName,
                 value = exception.Data["value"],
                 expected_type = ((Type)exception.Data["expected_type"]).Name.ToLower()
@@ -384,7 +394,7 @@ namespace JsonWebService {
         protected virtual object CallFailure(Exception e) {
             return new {
                 status = "failed",
-                error = e.Message
+                message = e.Message
             };
         }
         /// <summary>
@@ -394,7 +404,7 @@ namespace JsonWebService {
         protected virtual object InvalidVerb() {
             return new {
                 status = "failed",
-                error = "http verb specified is not allowed for this method."
+                message = "http verb specified is not allowed for this method."
             };
         }
         /// <summary>
@@ -404,7 +414,7 @@ namespace JsonWebService {
         protected virtual object Unauthorized() {
             return new {
                 status = "failed",
-                error = "Missing or invalid authorization key."
+                message = "Missing or invalid authorization key."
             };
         }
         /// <summary>
@@ -488,5 +498,9 @@ namespace JsonWebService {
                 return listener.IsListening;
             }
         }
+        /// <summary>
+        /// Gets and sets whether or not to open the default browser to the service address when the service starts.
+        /// </summary>
+        public bool OpenBrowserOnStart { get; set; }
     }
 }

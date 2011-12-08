@@ -20,6 +20,13 @@ namespace JsonWebService {
             IsArrayList = obj is ArrayList;
             objType = obj.GetType();
         }
+        public override bool TryConvert(ConvertBinder binder, out object result) {
+            result = null;
+            if(binder.Type == typeof(IEnumerable) && IsArrayList) {
+                result = ((ArrayList)obj).ToArray().Select(o => new JsonDynamicDocument(o));
+            }
+            return true;
+        }
 
         public override bool TryGetMember(GetMemberBinder binder, out object result) {
             object o = IsHashtable ? ((Hashtable)obj)[binder.Name] : null;

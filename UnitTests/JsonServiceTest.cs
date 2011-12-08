@@ -37,7 +37,8 @@ namespace UnitTests {
             ts = new MockService();
             ts.Port = 9999;
             ts.LogOutput = null;
-            ts.Start(false);
+            ts.OpenBrowserOnStart = false;
+            ts.Start();
 
             wc = new WebClient();
         }
@@ -115,7 +116,7 @@ namespace UnitTests {
             dynamic doc = GetDocument("gonnafail");
 
             Assert.AreEqual(doc.status, "failed");
-            Assert.AreEqual(doc.error, "You should still get a json response with an unhandled exception.");
+            Assert.AreEqual(doc.message, "You should still get a json response with an unhandled exception.");
         }
 
         [TestMethod]
@@ -241,7 +242,7 @@ namespace UnitTests {
             ts.Stop();
             ts.DescribePath = "/I/Need/Help";
             ts.AllowDescribe = true;
-            ts.Start(false);
+            ts.Start();
 
             dynamic doc = GetDocument("I/Need/Help");
 
@@ -249,7 +250,7 @@ namespace UnitTests {
 
             ts.Stop();
             ts.DescribePath = "/help";
-            ts.Start(false);
+            ts.Start();
         }
 
         [TestMethod]
