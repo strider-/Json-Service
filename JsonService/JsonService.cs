@@ -7,11 +7,13 @@ using System.Net;
 using System.Reflection;
 using System.IO;
 
-namespace JsonWebService {
+namespace JsonWebService
+{
     /// <summary>
     /// Log message severity indicator
     /// </summary>
-    public enum LogLevel {
+    public enum LogLevel
+    {
         /// <summary>
         /// General information
         /// </summary>
@@ -27,24 +29,26 @@ namespace JsonWebService {
     }
 
     enum ResponseType
-	{
-		Unauthorized,
-		Describe,
-		NoMethod,
-		NoGenericSupport,
-		WrongVerb,
-		Invoke
-	}
+    {
+        Unauthorized,
+        Describe,
+        NoMethod,
+        NoGenericSupport,
+        WrongVerb,
+        Invoke
+    }
 
     /// <summary>
     /// Abstract class for json based web services.
     /// </summary>
-    public abstract class JsonService {
+    public abstract class JsonService
+    {
         static object logLock = new object();
         IEnumerable<ServiceBridge> methods;
         HttpListener listener;
 
-        public JsonService() {
+        public JsonService()
+        {
             this.Host = "+";
             this.Port = 5678;
             this.Authorize = false;
@@ -58,13 +62,18 @@ namespace JsonWebService {
         /// <summary>
         /// Starts the service
         /// </summary>
-        public void Start() {
-            if(!listener.IsListening) {
-                try {
+        public void Start()
+        {
+            if(!listener.IsListening)
+            {
+                try
+                {
                     InitService();
                     CheckForTemplateCollisions();
                     listener.Start();
-                } catch(Exception e) {
+                }
+                catch(Exception e)
+                {
                     Log(LogLevel.Error, "Failed to start service: {0}", e.Message);
                     return;
                 }
@@ -84,8 +93,10 @@ namespace JsonWebService {
         /// <summary>
         /// Stops the service
         /// </summary>
-        public void Stop() {
-            if(listener.IsListening) {
+        public void Stop()
+        {
+            if(listener.IsListening)
+            {
                 listener.Stop();
                 Uri = null;
                 DescriptionUri = null;
@@ -96,14 +107,16 @@ namespace JsonWebService {
         /// Starts the service &amp; keeps it running as long as the conditon returns true.
         /// </summary>
         /// <param name="condition"></param>
-        public void RunWhile(Func<bool> condition) {
+        public void RunWhile(Func<bool> condition)
+        {
             Start();
             while(condition() && listener.IsListening)
                 ;
             Stop();
         }
 
-        void InitService() {
+        void InitService()
+        {
             Log(LogLevel.Info, "Initializing server");
 
             if(!System.Net.HttpListener.IsSupported)
@@ -112,7 +125,7 @@ namespace JsonWebService {
                 Host = "+";
             if(this.Port <= 0 || this.Port > 65535)
                 throw new ArgumentException("Port must be greater than 0 and less than 65535");
-            
+
             listener.Prefixes.Clear();
             listener.Prefixes.Add(string.Format("http://{0}:{1}/", this.Host, this.Port));
             Uri = new System.Uri(listener.Prefixes.First().Replace("+", "localhost"));
@@ -121,191 +134,205 @@ namespace JsonWebService {
             methods = from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
                       let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
                       where attribs.Count() > 0
-                      select new ServiceBridge {
+                      select new ServiceBridge
+                      {
                           MethodInfo = mi,
                           AttributeCount = attribs.Count(),
                           Attribute = attribs.First()
                       };
 
-            foreach(var method in methods.Where(m => m.AttributeCount > 1)) {
+            foreach(var method in methods.Where(m => m.AttributeCount > 1))
+            {
                 Log(LogLevel.Warning, "{0} has multiple VerbAttributes, defaulting to '{1}' method.", method.QualifiedName, method.Attribute.Verb);
             }
 
-            foreach(var method in methods.Where(m => m.MethodInfo.ContainsGenericParameters)) {
+            foreach(var method in methods.Where(m => m.MethodInfo.ContainsGenericParameters))
+            {
                 Log(LogLevel.Warning, "{0} contains generic parameters which are not currently supported.", method.QualifiedName);
             }
 
             Log(LogLevel.Info, "Validating placeholder variables");
             var bads = methods.Where(m => m.InvalidPlaceholders().Count() > 0);
-            if(bads.Count() > 0) {
-                foreach(var b in bads) {
+            if(bads.Count() > 0)
+            {
+                foreach(var b in bads)
+                {
                     Log(LogLevel.Error, "Invalid placeholder(s) on the {0} method: {1}", b.MethodInfo.Name, string.Join(",", b.InvalidPlaceholders()));
                 }
                 throw new InvalidPlaceholderException(bads.First().MethodInfo.Name, bads.First().InvalidPlaceholders());
             }
 
-            if(AllowDescribe) {
+            if(AllowDescribe)
+            {
                 Uri temp;
                 if(Uri.TryCreate(Uri, DescribePath, out temp))
                     DescriptionUri = temp;
             }
         }
 
-        void NewRequest(IAsyncResult Result) {
-            if(listener.IsListening) {
+        void NewRequest(IAsyncResult Result)
+        {
+            if(listener.IsListening)
+            {
                 HttpListenerContext context = listener.EndGetContext(Result);
                 listener.BeginGetContext(NewRequest, null);
-                
+
                 ProcessRequest(context);
             }
         }
 
-		ResponseType DetermineResponse(HttpListenerRequest request, ServiceBridge bridge)
-		{
-			// describe the service to the client
-			if(AllowDescribe && DescriptionUri != null && request.Url.LocalPath.Equals(DescriptionUri.LocalPath, StringComparison.InvariantCultureIgnoreCase))
-				return ResponseType.Describe;
+        ResponseType DetermineResponse(HttpListenerRequest request, ServiceBridge bridge)
+        {
+            // describe the service to the client
+            if(AllowDescribe && DescriptionUri != null && request.Url.LocalPath.Equals(DescriptionUri.LocalPath, StringComparison.InvariantCultureIgnoreCase))
+                return ResponseType.Describe;
 
-			// no matching method found
-			if(bridge == null)
-				return ResponseType.NoMethod;
+            // no matching method found
+            if(bridge == null)
+                return ResponseType.NoMethod;
 
-			// not authorized to invoke the method
-			if(Authorize && !bridge.Attribute.AllowUnauthorized && !AuthorizeRequest(request))
-				return ResponseType.Unauthorized;
+            // not authorized to invoke the method
+            if(Authorize && !bridge.Attribute.AllowUnauthorized && !AuthorizeRequest(request))
+                return ResponseType.Unauthorized;
 
-			// doesn't support generics in method parameters
-			if(bridge.MethodInfo.ContainsGenericParameters)
-				return ResponseType.NoGenericSupport;
+            // doesn't support generics in method parameters
+            if(bridge.MethodInfo.ContainsGenericParameters)
+                return ResponseType.NoGenericSupport;
 
-			// accessed the method using the wrong http verb
-			if(!bridge.Attribute.Verb.Equals(request.HttpMethod, StringComparison.InvariantCultureIgnoreCase))
-				return ResponseType.WrongVerb;
+            // accessed the method using the wrong http verb
+            if(!bridge.Attribute.Verb.Equals(request.HttpMethod, StringComparison.InvariantCultureIgnoreCase))
+                return ResponseType.WrongVerb;
 
-			// all good, run that method
-			return ResponseType.Invoke;
-		}
+            // all good, run that method
+            return ResponseType.Invoke;
+        }
 
-		void ProcessRequest(HttpListenerContext Context)
-		{
-			if(methods.Count() == 0)
-			{
-				Respond(Context.Response, NoExposedMethods());
-				Log(LogLevel.Error, "There are no methods exposed by this service!");
-				return;
-			}
+        void ProcessRequest(HttpListenerContext Context)
+        {
+            if(methods.Count() == 0)
+            {
+                Respond(Context.Response, NoExposedMethods());
+                Log(LogLevel.Error, "There are no methods exposed by this service!");
+                return;
+            }
 
-			var startTime = DateTime.Now;
-			var Request = Context.Request;
+            var startTime = DateTime.Now;
+            var Request = Context.Request;
 
-			// return the method with the greatest number of matched parameters
-			var bridge = (from m in methods
-									where m.IsMatch(Request.Url.LocalPath, Request.HttpMethod, Request.QueryString.AllKeys)
-									orderby m.Attribute.ParameterNames.Length descending
-									select m).FirstOrDefault();
+            // return the method with the greatest number of matched parameters
+            var bridge = (from m in methods
+                          where m.IsMatch(Request.Url.LocalPath, Request.HttpMethod, Request.QueryString.AllKeys)
+                          orderby m.Attribute.ParameterNames.Length descending
+                          select m).FirstOrDefault();
 
-			var responseType = DetermineResponse(Request, bridge);
+            var responseType = DetermineResponse(Request, bridge);
 
-			switch(responseType)
-			{
-				case ResponseType.Describe:
-					Respond(Context.Response, Describe());
-					Log(LogLevel.Info, "Describing service, {0}ms", DateTime.Now.Subtract(startTime).TotalMilliseconds);
-					break;
-				case ResponseType.Unauthorized:
-					Respond(Context.Response, Unauthorized());
-					Log(LogLevel.Warning, "Unauthorized request");
-					break;
-				case ResponseType.NoGenericSupport:
-					Exception exception = new Exception("Methods with generic parameters are not supported.");
-					Respond(Context.Response, CallFailure(exception));
-					Log(LogLevel.Warning, exception.Message);
-					break;
-				case ResponseType.NoMethod:
-					Respond(Context.Response, NoMatchingMethod());
-					Log(LogLevel.Warning, "No suitable method found for {0}", Request.Url.PathAndQuery);
-					break;
-				case ResponseType.WrongVerb:
-					Respond(Context.Response, InvalidVerb());
-					Log(LogLevel.Warning, "Invalid HTTP verb");
-					break;
-				case ResponseType.Invoke:
-					InvokeRequestedMethod(Context, bridge, startTime);
-					break;
-			}
-		}
+            switch(responseType)
+            {
+                case ResponseType.Describe:
+                    Respond(Context.Response, Describe());
+                    Log(LogLevel.Info, "Describing service, {0}ms", DateTime.Now.Subtract(startTime).TotalMilliseconds);
+                    break;
+                case ResponseType.Unauthorized:
+                    Respond(Context.Response, Unauthorized());
+                    Log(LogLevel.Warning, "Unauthorized request");
+                    break;
+                case ResponseType.NoGenericSupport:
+                    Exception exception = new Exception("Methods with generic parameters are not supported.");
+                    Respond(Context.Response, CallFailure(exception));
+                    Log(LogLevel.Warning, exception.Message);
+                    break;
+                case ResponseType.NoMethod:
+                    Respond(Context.Response, NoMatchingMethod());
+                    Log(LogLevel.Warning, "No suitable method found for {0}", Request.Url.PathAndQuery);
+                    break;
+                case ResponseType.WrongVerb:
+                    Respond(Context.Response, InvalidVerb());
+                    Log(LogLevel.Warning, "Invalid HTTP verb");
+                    break;
+                case ResponseType.Invoke:
+                    InvokeRequestedMethod(Context, bridge, startTime);
+                    break;
+            }
+        }
 
-		void InvokeRequestedMethod(HttpListenerContext context, ServiceBridge bridge, DateTime startTime)
-		{
-			var Request = context.Request;
-			var Response = context.Response;
+        void InvokeRequestedMethod(HttpListenerContext context, ServiceBridge bridge, DateTime startTime)
+        {
+            var Request = context.Request;
+            var Response = context.Response;
 
-			try
-			{
-				dynamic postedDoc = null;
+            try
+            {
+                dynamic postedDoc = null;
 
-				if(Request.HasEntityBody)
-				{
-					try
-					{
-						using(StreamReader sr = new StreamReader(Request.InputStream))
-						{
-							postedDoc = JsonDocument.Parse(sr.ReadToEnd());
-						}
-					}
-					catch
-					{
-						Respond(Response, InvalidJsonPosted());
-						Log(LogLevel.Warning, "Data posted to the server was not valid json");
-						return;
-					}
-				}
+                if(Request.HasEntityBody)
+                {
+                    try
+                    {
+                        using(StreamReader sr = new StreamReader(Request.InputStream))
+                        {
+                            postedDoc = JsonDocument.Parse(sr.ReadToEnd());
+                        }
+                    }
+                    catch
+                    {
+                        Respond(Response, InvalidJsonPosted());
+                        Log(LogLevel.Warning, "Data posted to the server was not valid json");
+                        return;
+                    }
+                }
 
-				var args = bridge.MapParameters(Request.QueryString, postedDoc);
+                var args = bridge.MapParameters(Request.QueryString, postedDoc);
 
-				var result = GetType().InvokeMember(
-					name: bridge.MethodInfo.Name,
-					invokeAttr: Flags,
-					binder: Type.DefaultBinder,
-					target: this,
-					args: args.Item1,
-					modifiers: null,
-					culture: null,
-					namedParameters: args.Item2
-				);
+                var result = GetType().InvokeMember(
+                    name: bridge.MethodInfo.Name,
+                    invokeAttr: Flags,
+                    binder: Type.DefaultBinder,
+                    target: this,
+                    args: args.Item1,
+                    modifiers: null,
+                    culture: null,
+                    namedParameters: args.Item2
+                );
 
-				Respond(Response, result);
-				Log(LogLevel.Info, "Invoked {0}({1}), {2}ms", bridge.QualifiedName, string.Join(", ", args.Item3), DateTime.Now.Subtract(startTime).TotalMilliseconds);
-			}
-			catch(ArgumentException ae)
-			{
-				Respond(Response, ParameterFailure(ae));
-				Log(LogLevel.Warning, "Parameter value missing or invalid");
-			}
-			catch(Exception e)
-			{
-				Respond(Response, CallFailure(e.InnerException ?? e));
-				Log(LogLevel.Warning, "Failure to execute method");
-			}
-		}
-        void Respond(HttpListenerResponse response, object content) {
-            if(listener.IsListening) {
-                using(JsonServiceResult result = (content as JsonServiceResult) ?? new JsonServiceResult(content)) {
+                Respond(Response, result);
+                Log(LogLevel.Info, "Invoked {0}({1}), {2}ms", bridge.QualifiedName, string.Join(", ", args.Item3), DateTime.Now.Subtract(startTime).TotalMilliseconds);
+            }
+            catch(ArgumentException ae)
+            {
+                Respond(Response, ParameterFailure(ae));
+                Log(LogLevel.Warning, "Parameter value missing or invalid");
+            }
+            catch(Exception e)
+            {
+                Respond(Response, CallFailure(e.InnerException ?? e));
+                Log(LogLevel.Warning, "Failure to execute method");
+            }
+        }
+        void Respond(HttpListenerResponse response, object content)
+        {
+            if(listener.IsListening)
+            {
+                using(JsonServiceResult result = (content as JsonServiceResult) ?? new JsonServiceResult(content))
+                {
                     result.WriteTo(response);
                 }
             }
         }
-        object Describe() {
+        object Describe()
+        {
             return from m in methods
                    let e = m.GetExampleUri(Uri)
                    where m.Attribute.Describe
-                   select new {
+                   select new
+                   {
                        path = m.Attribute.Path,
                        desc = m.Attribute.Description,
                        parameters = from pn in m.Attribute.ParameterNames
                                     let p = m.GetParameterInfo(pn)
                                     let r = p.DefaultValue == System.DBNull.Value
-                                    select new {
+                                    select new
+                                    {
                                         name = pn,
                                         type = p.ParameterType.Name.ToLower(),
                                         required = r,
@@ -315,12 +342,14 @@ namespace JsonWebService {
                        example = e == null ? string.Empty : e.AbsoluteUri
                    };
         }
-        void CheckForTemplateCollisions() {
+        void CheckForTemplateCollisions()
+        {
             var q = from m in methods
                     group m by m.GetHashCode() into dupes
                     where dupes.Count() > 1
                     let d = dupes.First().Attribute
-                    select new {
+                    select new
+                    {
                         Path = d.Path,
                         ParameterNames = d.ParameterNames,
                         Verb = d.Verb,
@@ -328,15 +357,19 @@ namespace JsonWebService {
                     };
 
 
-            if(q.Count() > 0) {
-                foreach(var c in q) {
+            if(q.Count() > 0)
+            {
+                foreach(var c in q)
+                {
                     Log(LogLevel.Error, "Template collision detected: Path={0}; Parameters={1}; Verb={2}; Methods={3}",
                         c.Path, string.Join(",", c.ParameterNames), c.Verb, string.Join(",", c.Methods));
                 }
 
                 var e = q.First();
                 throw new TemplateCollisionException(e.Path, e.ParameterNames, e.Verb, e.Methods);
-            } else {
+            }
+            else
+            {
                 Log(LogLevel.Info, "No template collisions detected.");
             }
         }
@@ -346,9 +379,12 @@ namespace JsonWebService {
         /// <param name="level">The severity of the message.</param>
         /// <param name="msg">The message to log, can be a formatted string.</param>
         /// <param name="args">The arguments to the formatted message string, if any.</param>
-        protected void Log(LogLevel level, string msg, params object[] args) {
-            lock(logLock) {
-                if(LogOutput != null) {
+        protected void Log(LogLevel level, string msg, params object[] args)
+        {
+            lock(logLock)
+            {
+                if(LogOutput != null)
+                {
                     StackFrame frame = new StackTrace().GetFrame(1);
                     MethodBase mb = frame.GetMethod();
                     // if the previous stack frame is from an invoked method or a non-overridden method, it's a system generated log event,
@@ -357,14 +393,21 @@ namespace JsonWebService {
                         ? "System"
                         : "User";
 
-                    try {
+                    try
+                    {
                         LogOutput.Write("{0:MM/dd/yyyy HH:mm:ss}\t{1}\t{2}\t", DateTime.Now, source, level);
                         LogOutput.WriteLine(msg, args);
-                    } catch(FormatException) {
+                    }
+                    catch(FormatException)
+                    {
                         LogOutput.WriteLine("String formatting error for log entry '{0}'", msg);
-                    } catch(Exception) {
+                    }
+                    catch(Exception)
+                    {
                         // So how do you log errors when the error log is the problem?
-                    } finally {
+                    }
+                    finally
+                    {
                         LogOutput.Flush();
                     }
                 }
@@ -376,7 +419,8 @@ namespace JsonWebService {
         /// <param name="content">Object to return to the client, can be null</param>
         /// <param name="code">Status code for the client</param>
         /// <returns></returns>
-        protected object WithStatusCode(object content, HttpStatusCode code) {
+        protected object WithStatusCode(object content, HttpStatusCode code)
+        {
             JsonServiceResult result = new JsonServiceResult(content);
             result.Code = code;
             return result;
@@ -387,7 +431,8 @@ namespace JsonWebService {
         /// <param name="resource">Resource to return, as a stream</param>
         /// <param name="contentType">content type of the resource</param>
         /// <returns></returns>
-        protected object Resource(Stream resource, string contentType) {
+        protected object Resource(Stream resource, string contentType)
+        {
             return Resource(resource, contentType, HttpStatusCode.OK);
         }
         /// <summary>
@@ -397,7 +442,8 @@ namespace JsonWebService {
         /// <param name="contentType">content type of the resource</param>
         /// <param name="code">Status code for the client</param>
         /// <returns></returns>
-        protected object Resource(Stream resource, string contentType, HttpStatusCode code) {
+        protected object Resource(Stream resource, string contentType, HttpStatusCode code)
+        {
             JsonServiceResult result = new JsonServiceResult(resource, contentType);
             result.Code = code;
             return result;
@@ -406,8 +452,10 @@ namespace JsonWebService {
         /// Returns the json for when the service has no publically available methods
         /// </summary>
         /// <returns></returns>
-        protected virtual object NoExposedMethods() {
-            return new {
+        protected virtual object NoExposedMethods()
+        {
+            return new
+            {
                 status = "failed",
                 message = "This service is not exposing any methods!"
             };
@@ -417,15 +465,18 @@ namespace JsonWebService {
         /// </summary>
         /// <param name="Request">The incoming request that needs to be validated.</param>
         /// <returns></returns>
-        protected virtual bool AuthorizeRequest(HttpListenerRequest Request) {
+        protected virtual bool AuthorizeRequest(HttpListenerRequest Request)
+        {
             return false;
         }
         /// <summary>
         /// Returns the json for when no method exists.
         /// </summary>
         /// <returns></returns>
-        protected virtual object NoMatchingMethod() {
-            return new {
+        protected virtual object NoMatchingMethod()
+        {
+            return new
+            {
                 status = "failed",
                 message = "Invalid method call"
             };
@@ -434,8 +485,10 @@ namespace JsonWebService {
         /// Returns the json for an error when a parameter value is invalid.
         /// </summary>
         /// <param name="exception">The argument exception thrown.  The Data property will contain 2 entries; value &amp; expected_type</param>
-        protected virtual object ParameterFailure(ArgumentException exception) {
-            return new {
+        protected virtual object ParameterFailure(ArgumentException exception)
+        {
+            return new
+            {
                 status = "failed",
                 message = exception.Message,
                 parameter = exception.ParamName,
@@ -448,8 +501,10 @@ namespace JsonWebService {
         /// </summary>
         /// <param name="e">Exception encountered when invoking the service method.</param>
         /// <returns></returns>        
-        protected virtual object CallFailure(Exception e) {
-            return new {
+        protected virtual object CallFailure(Exception e)
+        {
+            return new
+            {
                 status = "failed",
                 message = e.Message
             };
@@ -458,8 +513,10 @@ namespace JsonWebService {
         /// Returns the json for an invalid verb for the request.
         /// </summary>
         /// <returns></returns>
-        protected virtual object InvalidVerb() {
-            return new {
+        protected virtual object InvalidVerb()
+        {
+            return new
+            {
                 status = "failed",
                 message = "http verb specified is not allowed for this method."
             };
@@ -468,8 +525,10 @@ namespace JsonWebService {
         /// Returns the json for an unauthorized request.
         /// </summary>
         /// <returns></returns>
-        protected virtual object Unauthorized() {
-            return new {
+        protected virtual object Unauthorized()
+        {
+            return new
+            {
                 status = "failed",
                 message = "Missing or invalid authorization key."
             };
@@ -478,50 +537,59 @@ namespace JsonWebService {
         /// Returns the json for an invalid posted json document.
         /// </summary>
         /// <returns></returns>
-        protected virtual object InvalidJsonPosted() {
-            return new {
+        protected virtual object InvalidJsonPosted()
+        {
+            return new
+            {
                 status = "failed",
                 message = "json posted to the server was invalid."
             };
         }
 
-        BindingFlags Flags {
-            get {
+        BindingFlags Flags
+        {
+            get
+            {
                 return BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Instance;
             }
         }
         /// <summary>
         /// Gets and sets the host the service will run on.  Defaults to localhost.
         /// </summary>
-        public string Host {
+        public string Host
+        {
             get;
             set;
         }
         /// <summary>
         /// Gets and sets the port the service will run on.  Defaults to 5678.
         /// </summary>
-        public int Port {
+        public int Port
+        {
             get;
             set;
         }
         /// <summary>
         /// Gets and sets the path for service description. Defaults to '/help'
         /// </summary>
-        public string DescribePath {
+        public string DescribePath
+        {
             get;
             set;
         }
         /// <summary>
         /// Gets the URI the service is listening on
         /// </summary>
-        public Uri Uri {
+        public Uri Uri
+        {
             get;
             private set;
         }
         /// <summary>
         /// Gets the uri where the service will describe itself.
         /// </summary>
-        public Uri DescriptionUri {
+        public Uri DescriptionUri
+        {
             get;
             private set;
         }
@@ -529,29 +597,34 @@ namespace JsonWebService {
         /// Gets and sets whether or not to authorize requests.
         /// </summary>
         /// <remarks>Override the AuthorizeRequest method for custom authentication.</remarks>
-        public bool Authorize {
+        public bool Authorize
+        {
             get;
             set;
         }
         /// <summary>
         /// Gets and sets whether or not to allow the service to describe its methods to a client by requesting the path specified in DescribePath.
         /// </summary>
-        public bool AllowDescribe {
+        public bool AllowDescribe
+        {
             get;
             set;
         }
         /// <summary>
         /// Gets and sets the output for logging. Defaults to the console
         /// </summary>
-        public TextWriter LogOutput {
+        public TextWriter LogOutput
+        {
             get;
             set;
         }
         /// <summary>
         /// Gets whether or not the service is currently accepting requests.
         /// </summary>
-        public bool IsRunning {
-            get {
+        public bool IsRunning
+        {
+            get
+            {
                 return listener.IsListening;
             }
         }
