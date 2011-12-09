@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,6 +25,16 @@ namespace JsonWebService {
         /// </summary>
         Error
     }
+
+    enum ResponseType
+	{
+		Unauthorized,
+		Describe,
+		NoMethod,
+		NoGenericSupport,
+		WrongVerb,
+		Invoke
+	}
 
     /// <summary>
     /// Abstract class for json based web services.
@@ -140,6 +150,7 @@ namespace JsonWebService {
                     DescriptionUri = temp;
             }
         }
+
         void NewRequest(IAsyncResult Result) {
             if(listener.IsListening) {
                 HttpListenerContext context = listener.EndGetContext(Result);
@@ -148,89 +159,135 @@ namespace JsonWebService {
                 ProcessRequest(context);
             }
         }
-        void ProcessRequest(HttpListenerContext Context) {
-            var startTime = DateTime.Now;
 
-            var Request = Context.Request;
-            var Response = Context.Response;
+		ResponseType DetermineResponse(HttpListenerRequest request, ServiceBridge bridge)
+		{
+			// describe the service to the client
+			if(AllowDescribe && DescriptionUri != null && request.Url.LocalPath.Equals(DescriptionUri.LocalPath, StringComparison.InvariantCultureIgnoreCase))
+				return ResponseType.Describe;
 
-            if(methods.Count() == 0) {
-                Respond(Response, NoExposedMethods());
-                Log(LogLevel.Error, "There are no methods exposed by this service!");
-                return;
-            }
+			// no matching method found
+			if(bridge == null)
+				return ResponseType.NoMethod;
 
-            // return the method with the greatest number of matched parameters
-            ServiceBridge bridge = (from m in methods
-                                    where m.IsMatch(Request.Url.LocalPath, Request.HttpMethod, Request.QueryString.AllKeys)
-                                    orderby m.Attribute.ParameterNames.Length descending
-                                    select m).FirstOrDefault();
+			// not authorized to invoke the method
+			if(Authorize && !bridge.Attribute.AllowUnauthorized && !AuthorizeRequest(request))
+				return ResponseType.Unauthorized;
 
-            if(Authorize && (bridge != null && !bridge.Attribute.AllowUnauthorized) && !AuthorizeRequest(Request)) {
-                Respond(Response, Unauthorized());
-                Log(LogLevel.Warning, "Unauthorized request");
-                return;
-            }
+			// doesn't support generics in method parameters
+			if(bridge.MethodInfo.ContainsGenericParameters)
+				return ResponseType.NoGenericSupport;
 
-            if(AllowDescribe && DescriptionUri != null && Request.Url.LocalPath.Equals(DescriptionUri.LocalPath, StringComparison.InvariantCultureIgnoreCase)) {
-                Respond(Response, Describe());
-                Log(LogLevel.Info, "Describing service, {0}ms", DateTime.Now.Subtract(startTime).TotalMilliseconds);
-                return;
-            }
+			// accessed the method using the wrong http verb
+			if(!bridge.Attribute.Verb.Equals(request.HttpMethod, StringComparison.InvariantCultureIgnoreCase))
+				return ResponseType.WrongVerb;
 
-            if(bridge == null) {
-                Respond(Response, NoMatchingMethod());
-                Log(LogLevel.Warning, "No suitable method found for {0}", Request.Url.PathAndQuery);
-                return;
-            } else if(bridge.MethodInfo.ContainsGenericParameters) {
-                Exception e = new Exception("Methods with generic parameters are not supported.");
-                Respond(Response, CallFailure(e));
-                Log(LogLevel.Warning, e.Message);
-            } else {
-                if(!Request.HttpMethod.Equals(bridge.Attribute.Verb, StringComparison.InvariantCultureIgnoreCase)) {
-                    Respond(Response, InvalidVerb());
-                    Log(LogLevel.Warning, "Invalid HTTP verb");
-                } else {
-                    try {
-                        dynamic postedDoc = null;
+			// all good, run that method
+			return ResponseType.Invoke;
+		}
 
-                        if(Request.HasEntityBody) {
-                            try {
-                                using(StreamReader sr = new StreamReader(Request.InputStream)) {
-                                    postedDoc = JsonDocument.Parse(sr.ReadToEnd());
-                                }
-                            } catch {
-                                Respond(Response, InvalidJsonPosted());
-                                Log(LogLevel.Warning, "Data posted to the server was not valid json");
-                                return;
-                            }
-                        }
+		void ProcessRequest(HttpListenerContext Context)
+		{
+			if(methods.Count() == 0)
+			{
+				Respond(Context.Response, NoExposedMethods());
+				Log(LogLevel.Error, "There are no methods exposed by this service!");
+				return;
+			}
 
-                        var args = bridge.MapParameters(Request.QueryString, postedDoc);
+			var startTime = DateTime.Now;
+			var Request = Context.Request;
 
-                        var result = GetType().InvokeMember(
-                            name: bridge.MethodInfo.Name,
-                            invokeAttr: Flags,
-                            binder: Type.DefaultBinder,
-                            target: this,
-                            args: args.Item1,
-                            modifiers: null,
-                            culture: null,
-                            namedParameters: args.Item2
-                        );
+			// return the method with the greatest number of matched parameters
+			var bridge = (from m in methods
+									where m.IsMatch(Request.Url.LocalPath, Request.HttpMethod, Request.QueryString.AllKeys)
+									orderby m.Attribute.ParameterNames.Length descending
+									select m).FirstOrDefault();
 
-                        Respond(Response, result);
-                        Log(LogLevel.Info, "Invoked {0}({1}), {2}ms", bridge.QualifiedName, string.Join(", ", args.Item3), DateTime.Now.Subtract(startTime).TotalMilliseconds);
-                    } catch(ArgumentException ae) {
-                        Respond(Response, ParameterFailure(ae));
-                        Log(LogLevel.Warning, "Parameter value missing or invalid");
-                    } catch(Exception e) {
-                        Respond(Response, CallFailure(e.InnerException ?? e));
-                        Log(LogLevel.Warning, "Failure to execute method");
-                    }
-                }
-            }
-        }
+			var responseType = DetermineResponse(Request, bridge);
+
+			switch(responseType)
+			{
+				case ResponseType.Describe:
+					Respond(Context.Response, Describe());
+					Log(LogLevel.Info, "Describing service, {0}ms", DateTime.Now.Subtract(startTime).TotalMilliseconds);
+					break;
+				case ResponseType.Unauthorized:
+					Respond(Context.Response, Unauthorized());
+					Log(LogLevel.Warning, "Unauthorized request");
+					break;
+				case ResponseType.NoGenericSupport:
+					Exception exception = new Exception("Methods with generic parameters are not supported.");
+					Respond(Context.Response, CallFailure(exception));
+					Log(LogLevel.Warning, exception.Message);
+					break;
+				case ResponseType.NoMethod:
+					Respond(Context.Response, NoMatchingMethod());
+					Log(LogLevel.Warning, "No suitable method found for {0}", Request.Url.PathAndQuery);
+					break;
+				case ResponseType.WrongVerb:
+					Respond(Context.Response, InvalidVerb());
+					Log(LogLevel.Warning, "Invalid HTTP verb");
+					break;
+				case ResponseType.Invoke:
+					InvokeRequestedMethod(Context, bridge, startTime);
+					break;
+			}
+		}
+
+		void InvokeRequestedMethod(HttpListenerContext context, ServiceBridge bridge, DateTime startTime)
+		{
+			var Request = context.Request;
+			var Response = context.Response;
+
+			try
+			{
+				dynamic postedDoc = null;
+
+				if(Request.HasEntityBody)
+				{
+					try
+					{
+						using(StreamReader sr = new StreamReader(Request.InputStream))
+						{
+							postedDoc = JsonDocument.Parse(sr.ReadToEnd());
+						}
+					}
+					catch
+					{
+						Respond(Response, InvalidJsonPosted());
+						Log(LogLevel.Warning, "Data posted to the server was not valid json");
+						return;
+					}
+				}
+
+				var args = bridge.MapParameters(Request.QueryString, postedDoc);
+
+				var result = GetType().InvokeMember(
+					name: bridge.MethodInfo.Name,
+					invokeAttr: Flags,
+					binder: Type.DefaultBinder,
+					target: this,
+					args: args.Item1,
+					modifiers: null,
+					culture: null,
+					namedParameters: args.Item2
+				);
+
+				Respond(Response, result);
+				Log(LogLevel.Info, "Invoked {0}({1}), {2}ms", bridge.QualifiedName, string.Join(", ", args.Item3), DateTime.Now.Subtract(startTime).TotalMilliseconds);
+			}
+			catch(ArgumentException ae)
+			{
+				Respond(Response, ParameterFailure(ae));
+				Log(LogLevel.Warning, "Parameter value missing or invalid");
+			}
+			catch(Exception e)
+			{
+				Respond(Response, CallFailure(e.InnerException ?? e));
+				Log(LogLevel.Warning, "Failure to execute method");
+			}
+		}
         void Respond(HttpListenerResponse response, object content) {
             if(listener.IsListening) {
                 using(JsonServiceResult result = (content as JsonServiceResult) ?? new JsonServiceResult(content)) {
