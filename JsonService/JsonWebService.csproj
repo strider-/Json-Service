@@ -49,14 +49,18 @@
     <Compile Include="Exceptions\InvalidPlaceholderException.cs" />
     <Compile Include="Attributes\PostAttribute.cs" />
     <Compile Include="Attributes\PutAttribute.cs" />
+    <Compile Include="Exceptions\JsonParserException.cs" />
     <Compile Include="Exceptions\TemplateCollisionException.cs" />
     <Compile Include="Attributes\VerbAttribute.cs" />
-    <Compile Include="JsonDocument.cs" />
-    <Compile Include="JsonDynamicDocument.cs" />
+    <Compile Include="Json\JsonDocument.cs" />
+    <Compile Include="Json\JsonDynamicDocument.cs" />
     <Compile Include="JsonServiceResult.cs" />
+    <Compile Include="LogLevel.cs" />
+    <Compile Include="ResponseType.cs" />
     <Compile Include="ServiceBridge.cs" />
     <Compile Include="JsonService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ServiceContext.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

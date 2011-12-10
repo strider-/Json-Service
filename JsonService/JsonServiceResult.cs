@@ -18,22 +18,10 @@ namespace JsonWebService {
             _data = new MemoryStream(Encoding.UTF8.GetBytes(doc.ToString()));
             _ctype = "application/json";
         }
+
         internal JsonServiceResult(Stream data, string contentType) {
             _data = data;
             _ctype = contentType;
-        }
-
-        public void WriteTo(HttpListenerResponse response) {
-            response.StatusCode = (int)_code;
-            response.StatusDescription = _code.ToString();
-            response.ContentType = _ctype;
-            if(_data.CanSeek) {
-                _data.Position = 0;
-                response.ContentLength64 = _data.Length;
-            }
-            _data.CopyTo(response.OutputStream);
-            response.Close();
-            _data.Close();
         }
 
         public void Dispose() {
@@ -56,5 +44,12 @@ namespace JsonWebService {
                 _code = value;
             }
         }
+		public Stream Content
+		{
+			get
+			{
+				return _data;
+			}
+		}
     }
 }
