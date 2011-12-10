@@ -299,7 +299,7 @@ namespace UnitTests {
         public void Logging() {
             const int entry_count = 4;
 
-            JsonService_Accessor target = new JsonService_Accessor(new PrivateObject(ts));
+            JsonServiceBase_Accessor target = new JsonServiceBase_Accessor(new PrivateObject(ts));
             StringBuilder sb = new StringBuilder();
             using(StringWriter sw = new StringWriter(sb)) {
                 target.LogOutput = sw;

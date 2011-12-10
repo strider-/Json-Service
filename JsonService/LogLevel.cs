@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace JsonWebService {
+namespace JsonWebService
+{
     /// <summary>
     /// Log message severity indicator
     /// </summary>
-    public enum LogLevel {
+    public enum LogLevel
+    {
         /// <summary>
         /// General information
         /// </summary>

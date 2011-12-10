@@ -12,13 +12,13 @@ namespace JsonWebService
     /// <summary>
     /// Abstract class for json based web services.
     /// </summary>
-    public abstract class JsonService
+    public abstract class JsonServiceBase
     {
         static object logLock = new object();
         IEnumerable<ServiceBridge> methods;
         HttpListener listener;
 
-        public JsonService()
+        public JsonServiceBase()
         {
             this.Host = "+";
             this.Port = 5678;
@@ -309,7 +309,7 @@ namespace JsonWebService
                     MethodBase mb = frame.GetMethod();
                     // if the previous stack frame is from an invoked method or a non-overridden method, it's a system generated log event,
                     // otherwise it's a user defined log event.
-                    string source = mb.Name.Equals("CallSite.Target") || mb.DeclaringType == typeof(JsonService)
+                    string source = mb.Name.Equals("CallSite.Target") || mb.DeclaringType == typeof(JsonServiceBase)
                         ? "System"
                         : "User";
 

@@ -58,7 +58,7 @@
     <Compile Include="LogLevel.cs" />
     <Compile Include="ResponseType.cs" />
     <Compile Include="ServiceBridge.cs" />
-    <Compile Include="JsonService.cs" />
+    <Compile Include="JsonServiceBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceContext.cs" />
   </ItemGroup>

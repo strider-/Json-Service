@@ -23,7 +23,7 @@ namespace Testing
         }
     }
 
-    class ConsoleService : JsonService
+    class ConsoleService : JsonServiceBase
     {
         [Get("/", Description = "Service status OK!", Example = "/")]
         public object Root()

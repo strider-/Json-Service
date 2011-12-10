@@ -4,7 +4,7 @@ using JsonWebService;
 using System.IO;
 
 namespace UnitTests {
-    class MockService : JsonService {
+    class MockService : JsonServiceBase {
         [Get("/", Description = "Service status OK!", Example = "/")]
         public object Root() {
             return new {

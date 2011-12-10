@@ -12,10 +12,10 @@ namespace JsonWebService
     /// </summary>
     class ServiceContext
     {
-        JsonService _service;
+        JsonServiceBase _service;
         HttpListenerResponse _response;
 
-        public ServiceContext(HttpListenerContext context, ServiceBridge bridge, JsonService service)
+        public ServiceContext(HttpListenerContext context, ServiceBridge bridge, JsonServiceBase service)
         {
             Timestamp = DateTime.Now;
             Request = context.Request;

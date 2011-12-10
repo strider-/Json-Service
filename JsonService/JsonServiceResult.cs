@@ -5,13 +5,16 @@ using System.Text;
 using System.IO;
 using System.Net;
 
-namespace JsonWebService {
-    internal class JsonServiceResult : IDisposable {
+namespace JsonWebService
+{
+    internal class JsonServiceResult : IDisposable
+    {
         Stream _data;
         string _ctype;
         HttpStatusCode _code = HttpStatusCode.OK;
 
-        internal JsonServiceResult(object content) {
+        internal JsonServiceResult(object content)
+        {
             JsonDocument doc = new JsonDocument(content);
             doc.Formatting = JsonDocument.JsonFormat.None;
 
@@ -19,37 +22,44 @@ namespace JsonWebService {
             _ctype = "application/json";
         }
 
-        internal JsonServiceResult(Stream data, string contentType) {
+        internal JsonServiceResult(Stream data, string contentType)
+        {
             _data = data;
             _ctype = contentType;
         }
 
-        public void Dispose() {
+        public void Dispose()
+        {
             if(_data != null)
                 _data.Dispose();
             _data = null;
         }
 
-        public string ContentType {
-            get {
+        public string ContentType
+        {
+            get
+            {
                 return _ctype;
             }
         }
 
-        public HttpStatusCode Code {
-            get {
+        public HttpStatusCode Code
+        {
+            get
+            {
                 return _code;
             }
-            set {
+            set
+            {
                 _code = value;
             }
         }
-		public Stream Content
-		{
-			get
-			{
-				return _data;
-			}
-		}
+        public Stream Content
+        {
+            get
+            {
+                return _data;
+            }
+        }
     }
 }
