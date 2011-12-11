@@ -20,7 +20,6 @@ namespace JsonWebService
         /// <returns></returns>
         public bool IsMatch(string path, string verb, string[] qsKeys)
         {
-            bool test = GetRequiredParameters().All(p => qsKeys.Contains(p, StringComparer.InvariantCultureIgnoreCase));
             return Attribute.Path.Equals(path, StringComparison.InvariantCultureIgnoreCase) &&
                 GetRequiredParameters().All(p => qsKeys.Contains(p, StringComparer.InvariantCultureIgnoreCase)) &&
                 Attribute.Verb.Equals(verb, StringComparison.InvariantCultureIgnoreCase);
