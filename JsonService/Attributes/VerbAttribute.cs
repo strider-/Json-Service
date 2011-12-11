@@ -37,7 +37,7 @@ namespace JsonWebService
         {
             if(dict.ContainsKey(Placeholder))
                 return dict[Placeholder];
-            return null;
+            return Placeholder;
         }
         /// <summary>
         /// Gets the placeholder for a given parameter name
@@ -46,7 +46,7 @@ namespace JsonWebService
         /// <returns></returns>
         public string GetPlaceholder(string ParameterName)
         {
-            return dict.Where(kvp => kvp.Value.Equals(ParameterName, StringComparison.InvariantCultureIgnoreCase)).SingleOrDefault().Key;
+            return dict.Where(kvp => kvp.Value.Equals(ParameterName, StringComparison.InvariantCultureIgnoreCase)).SingleOrDefault().Key ?? ParameterName;
         }
         /// <summary>
         /// Gets the template for a service method call

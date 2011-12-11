@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Net;
 using System.IO;
+using System.Reflection;
 
 namespace JsonWebService
 {
@@ -14,14 +15,16 @@ namespace JsonWebService
     {
         JsonServiceBase _service;
         HttpListenerResponse _response;
+        IDictionary<string, string> _headers;
 
-        public ServiceContext(HttpListenerContext context, ServiceBridge bridge, JsonServiceBase service)
+        public ServiceContext(HttpListenerContext context, ServiceBridge bridge, JsonServiceBase service, IDictionary<string, string> customHeaders)
         {
             Timestamp = DateTime.Now;
             Request = context.Request;
             Bridge = bridge;
             _response = context.Response;
             _service = service;
+            _headers = customHeaders ?? new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -52,7 +55,6 @@ namespace JsonWebService
             // all good, run that method
             return ResponseType.Invoke;
         }
-
         /// <summary>
         /// Returns json or resources to the client.
         /// </summary>
@@ -68,6 +70,11 @@ namespace JsonWebService
                     _response.StatusCode = (int)result.Code;
                     _response.StatusDescription = result.Code.ToString();
                     _response.ContentType = result.ContentType;
+                    _headers.ToList().ForEach(kvp =>
+                    {
+                        _response.AddHeader(kvp.Key, kvp.Value);
+                    });
+
                     if(data.CanSeek)
                     {
                         data.Position = 0;
@@ -118,6 +125,8 @@ namespace JsonWebService
                 {
                     string key = Bridge.Attribute.GetParameterName(param.Name);
                     string val = qs[key];
+
+
 
                     if(val == null && param.DefaultValue != System.DBNull.Value)
                     {

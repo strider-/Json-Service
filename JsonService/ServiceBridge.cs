@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Reflection;
+using System.Dynamic;
 
 namespace JsonWebService
 {
@@ -20,15 +21,25 @@ namespace JsonWebService
         /// <returns></returns>
         public bool IsMatch(string path, string verb, string[] qsKeys)
         {
+            var text = GetRequiredParameters();
+
             return Attribute.Path.Equals(path, StringComparison.InvariantCultureIgnoreCase) &&
                 GetRequiredParameters().All(p => qsKeys.Contains(p, StringComparer.InvariantCultureIgnoreCase)) &&
                 Attribute.Verb.Equals(verb, StringComparison.InvariantCultureIgnoreCase);
         }
         string[] GetRequiredParameters()
         {
-            return (from p in MethodInfo.GetParameters()
+            Func<ParameterInfo, bool> notEntityDocument = (p) => {
+                if(this.Attribute is EntityAttribute)
+                {
+                    return !p.Name.Equals(((EntityAttribute)this.Attribute).EntityDocument, StringComparison.InvariantCultureIgnoreCase);
+                }
+                return true;
+            };
+
+            return (from p in MethodInfo.GetParameters().Where(notEntityDocument)
                     let k = Attribute.GetParameterName(p.Name)
-                    where k != null && p.DefaultValue == System.DBNull.Value
+                    where p.DefaultValue == System.DBNull.Value
                     select k).ToArray();
         }
         /// <summary>
@@ -51,6 +62,15 @@ namespace JsonWebService
         public ParameterInfo GetParameterInfo(string ParameterName)
         {
             return MethodInfo.GetParameters().SingleOrDefault(p => p.Name == Attribute.GetPlaceholder(ParameterName));
+        }
+
+        /// <summary>
+        /// Returns all the query string parameter names this method call supports
+        /// </summary>
+        /// <returns></returns>
+        public string[] GetQueryStringParameterNames()
+        {
+            return MethodInfo.GetParameters().Select(p => Attribute.GetParameterName(p.Name)).ToArray();
         }
         /// <summary>
         /// Returns the Uri for an example use, if an example was specified.

@@ -15,8 +15,10 @@ namespace JsonWebService
     public abstract class JsonServiceBase
     {
         static object logLock = new object();
-        IEnumerable<ServiceBridge> methods;
+        IEnumerable<ServiceBridge> bridges;
         HttpListener listener;
+        Dictionary<string, string> customHeaders;
+        BindingFlags _bindingFlags = BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Instance;
 
         public JsonServiceBase()
         {
@@ -28,6 +30,7 @@ namespace JsonWebService
             this.LogOutput = Console.Out;
             this.listener = new HttpListener();
             this.OpenBrowserOnStart = false;
+            this.customHeaders = new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -35,7 +38,7 @@ namespace JsonWebService
         /// </summary>
         public void Start()
         {
-            if(!listener.IsListening)
+            if(!IsRunning)
             {
                 try
                 {
@@ -66,7 +69,7 @@ namespace JsonWebService
         /// </summary>
         public void Stop()
         {
-            if(listener.IsListening)
+            if(IsRunning)
             {
                 listener.Stop();
                 Uri = null;
@@ -81,7 +84,7 @@ namespace JsonWebService
         public void RunWhile(Func<bool> condition)
         {
             Start();
-            while(condition() && listener.IsListening)
+            while(condition() && IsRunning)
                 ;
             Stop();
         }
@@ -89,7 +92,7 @@ namespace JsonWebService
         {
             Log(LogLevel.Info, "Initializing server");
 
-            if(!System.Net.HttpListener.IsSupported)
+            if(!HttpListener.IsSupported)
                 throw new ApplicationException("HttpListener is not supported on this version of Windows.");
             if(string.IsNullOrWhiteSpace(Host))
                 Host = "+";
@@ -101,7 +104,8 @@ namespace JsonWebService
             Uri = new System.Uri(listener.Prefixes.First().Replace("+", "localhost"));
 
             Log(LogLevel.Info, "Obtaining service method information");
-            methods = from mi in GetType().GetMethods(Flags).OfType<MethodInfo>()
+            
+            bridges = from mi in GetType().GetMethods(_bindingFlags).OfType<MethodInfo>()
                       let attribs = mi.GetCustomAttributes(false).OfType<VerbAttribute>()
                       where attribs.Count() > 0
                       select new ServiceBridge
@@ -111,18 +115,18 @@ namespace JsonWebService
                           Attribute = attribs.First()
                       };
 
-            foreach(var method in methods.Where(m => m.AttributeCount > 1))
+            foreach(var method in bridges.Where(m => m.AttributeCount > 1))
             {
                 Log(LogLevel.Warning, "{0} has multiple VerbAttributes, defaulting to '{1}' method.", method.QualifiedName, method.Attribute.Verb);
             }
 
-            foreach(var method in methods.Where(m => m.MethodInfo.ContainsGenericParameters))
+            foreach(var method in bridges.Where(m => m.MethodInfo.ContainsGenericParameters))
             {
                 Log(LogLevel.Warning, "{0} contains generic parameters which are not currently supported.", method.QualifiedName);
             }
 
             Log(LogLevel.Info, "Validating placeholder variables");
-            var bads = methods.Where(m => m.InvalidPlaceholders().Count() > 0);
+            var bads = bridges.Where(m => m.InvalidPlaceholders().Count() > 0);
             if(bads.Count() > 0)
             {
                 foreach(var b in bads)
@@ -139,25 +143,24 @@ namespace JsonWebService
                     DescriptionUri = temp;
             }
         }
-        void NewRequest(IAsyncResult Result)
+        void NewRequest(IAsyncResult result)
         {
-            if(listener.IsListening)
+            if(IsRunning)
             {
-                HttpListenerContext context = listener.EndGetContext(Result);
+                HttpListenerContext context = listener.EndGetContext(result);                
                 listener.BeginGetContext(NewRequest, null);
-				
 				// get the method with the greatest number of matched parameters
-				var bridge = (from m in methods
+				var bridge = (from m in bridges
 							  where m.IsMatch(context.Request.Url.LocalPath, context.Request.HttpMethod, context.Request.QueryString.AllKeys)
 							  orderby m.Attribute.ParameterNames.Length descending
 							  select m).FirstOrDefault();
 
-				ProcessRequest(new ServiceContext(context, bridge, this));
+				ProcessRequest(new ServiceContext(context, bridge, this, customHeaders));
             }
         }
         void ProcessRequest(ServiceContext context)
         {
-			if(methods.Count() == 0)
+			if(bridges.Count() == 0)
 			{
 				context.Respond(NoExposedMethods());
 				Log(LogLevel.Error, "There are no methods exposed by this service!");
@@ -207,10 +210,9 @@ namespace JsonWebService
             try
             {
                 var map = context.GetMappedParameters();
-
                 var result = GetType().InvokeMember(
                     name: context.Bridge.MethodInfo.Name,
-                    invokeAttr: Flags,
+                    invokeAttr: _bindingFlags,
                     binder: Type.DefaultBinder,
                     target: this,
                     args: map.Values.ToArray(),
@@ -241,14 +243,14 @@ namespace JsonWebService
         }
         object Describe()
         {
-            return from m in methods
-                   let e = m.GetExampleUri(Uri)
+            return from m in bridges
                    where m.Attribute.Describe
+                   let e = m.GetExampleUri(Uri)                   
                    select new
                    {
                        path = m.Attribute.Path,
                        desc = m.Attribute.Description,
-                       parameters = from pn in m.Attribute.ParameterNames
+                       parameters = from pn in m.GetQueryStringParameterNames()
                                     let p = m.GetParameterInfo(pn)
                                     let r = p.DefaultValue == System.DBNull.Value
                                     select new
@@ -264,7 +266,7 @@ namespace JsonWebService
         }
         void CheckForTemplateCollisions()
         {
-            var q = from m in methods
+            var q = from m in bridges
                     group m by m.GetHashCode() into dupes
                     where dupes.Count() > 1
                     let d = dupes.First().Attribute
@@ -465,14 +467,25 @@ namespace JsonWebService
                 message = "json posted to the server was invalid."
             };
         }
-
-        BindingFlags Flags
+        /// <summary>
+        /// Appends the specified header &amp; value to service responses.
+        /// </summary>
+        /// <param name="key">The name of the HTTP header</param>
+        /// <param name="value">The value of the HTTP header</param>
+        /// <remarks>Calls to this method while the service is running are ignored.</remarks>
+        public void AddResponseHeader(string key, string value)
         {
-            get
+            if(!IsRunning)
             {
-                return BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Instance;
+                if(key == null)
+                    throw new ArgumentNullException("key");
+                if(value == null)
+                    throw new ArgumentNullException("value");
+
+                customHeaders[key] = value;
             }
         }
+
         /// <summary>
         /// Gets and sets the host the service will run on.  Defaults to localhost.
         /// </summary>

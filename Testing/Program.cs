@@ -18,7 +18,9 @@ namespace Testing
             ConsoleService ts = new ConsoleService();
             ts.AllowDescribe = true;
             ts.OpenBrowserOnStart = true;
-
+            ts.AddResponseHeader("X-Powered-By", "Json Web Service");
+            ts.AddResponseHeader("X-Service-Version", "1.0.2348");
+            
             ts.RunWhile(() => Console.ReadKey(true).Key != ConsoleKey.Escape);
         }
     }
@@ -51,12 +53,6 @@ namespace Testing
                 )
             );
             return Xml(doc);
-        }
-
-        [Get("/add?num1={x}&num2={y}")]
-        public object Add(int x, int y = 0)
-        {
-            return new { result = x + y };
         }
 
         public object Xml(XDocument document)

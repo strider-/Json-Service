@@ -182,7 +182,7 @@ namespace UnitTests {
         public void HttpVerbAccept() {
             dynamic doc = PostDocument("save?id=1", string.Empty);
 
-            Assert.AreEqual(doc.status, "ok");
+            Assert.AreEqual("ok", doc.status);
         }
 
         [TestMethod]
