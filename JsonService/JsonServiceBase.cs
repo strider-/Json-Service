@@ -167,42 +167,40 @@ namespace JsonWebService
 				return;
 			}
 
-			var responseType = context.DetermineResponse();
-
-            switch(responseType)
+            if(context.RequireAuthorization && !AuthorizeRequest(context.Request))
             {
-                case ResponseType.Describe:
-					context.Respond(Describe());
-                    Log(LogLevel.Info, "Describing service, {0}ms", context.ProcessingTime);
-                    break;
+                context.Respond(Unauthorized());
+                Log(LogLevel.Warning, "Unauthorized request");
+            }
+            else
+            {
+                switch(context.ResponseType)
+                {
+                    case ResponseType.Describe:
+                        context.Respond(Describe());
+                        Log(LogLevel.Info, "Describing service, {0}ms", context.ProcessingTime);
+                        break;
 
-                case ResponseType.NoGenericSupport:
-                    Exception exception = new Exception("Methods with generic parameters are not supported.");
-                    context.Respond(CallFailure(exception));
-                    Log(LogLevel.Warning, exception.Message);
-                    break;
+                    case ResponseType.NoGenericSupport:
+                        Exception exception = new Exception("Methods with generic parameters are not supported.");
+                        context.Respond(CallFailure(exception));
+                        Log(LogLevel.Warning, exception.Message);
+                        break;
 
-                case ResponseType.NoMethod:
-					context.Respond(NoMatchingMethod());
-                    Log(LogLevel.Warning, "No suitable method found for {0}", context.Request.Url.PathAndQuery);
-                    break;
+                    case ResponseType.NoMethod:
+                        context.Respond(NoMatchingMethod());
+                        Log(LogLevel.Warning, "No suitable method found for {0}", context.Request.Url.PathAndQuery);
+                        break;
 
-                case ResponseType.WrongVerb:
-					context.Respond(InvalidVerb());
-                    Log(LogLevel.Warning, "Invalid HTTP verb");
-                    break;
+                    case ResponseType.WrongVerb:
+                        context.Respond(InvalidVerb());
+                        Log(LogLevel.Warning, "Invalid HTTP verb");
+                        break;
 
-                case ResponseType.Invoke:
-					if(context.AuthorizeBeforeInvoke && !AuthorizeRequest(context.Request))
-					{
-						context.Respond(Unauthorized());
-						Log(LogLevel.Warning, "Unauthorized request");
-					}
-					else
-					{
-						InvokeRequestedMethod(context);
-					}
-                    break;
+                    case ResponseType.Invoke:
+                        InvokeRequestedMethod(context);
+                        break;
+                }
             }
         }
         void InvokeRequestedMethod(ServiceContext context)

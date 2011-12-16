@@ -25,13 +25,12 @@ namespace JsonWebService
             _response = context.Response;
             _service = service;
             _headers = customHeaders ?? new Dictionary<string, string>();
+
+            RequireAuthorization = _service.Authorize && (Bridge == null || !Bridge.Attribute.AllowUnauthorized);
+            ResponseType = DetermineResponse();
         }
 
-        /// <summary>
-        /// Informs the service about how it needs to respond to the client.
-        /// </summary>
-        /// <returns></returns>
-        public ResponseType DetermineResponse()
+        ResponseType DetermineResponse()
         {
             // describe the service to the client
             if(_service.AllowDescribe && _service.DescriptionUri != null && Request.Url.LocalPath.Equals(_service.DescriptionUri.LocalPath, StringComparison.InvariantCultureIgnoreCase))
@@ -49,12 +48,10 @@ namespace JsonWebService
             if(!Bridge.Attribute.Verb.Equals(Request.HttpMethod, StringComparison.InvariantCultureIgnoreCase))
                 return ResponseType.WrongVerb;
 
-            // require authorization before invocation
-            AuthorizeBeforeInvoke = _service.Authorize && !Bridge.Attribute.AllowUnauthorized;
-
             // all good, run that method
             return ResponseType.Invoke;
         }
+
         /// <summary>
         /// Returns json or resources to the client.
         /// </summary>
@@ -190,7 +187,15 @@ namespace JsonWebService
         /// <summary>
         /// Gets whether or not to authorize the request before invoking the requested method
         /// </summary>
-        public bool AuthorizeBeforeInvoke
+        public bool RequireAuthorization
+        {
+            get;
+            private set;
+        }
+        /// <summary>
+        /// Gets the type of response the server should return to the client.
+        /// </summary>
+        public ResponseType ResponseType
         {
             get;
             private set;
