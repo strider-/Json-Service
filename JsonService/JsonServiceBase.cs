@@ -471,7 +471,7 @@ namespace JsonWebService
         /// <param name="key">The name of the HTTP header</param>
         /// <param name="value">The value of the HTTP header</param>
         /// <remarks>Calls to this method while the service is running are ignored.</remarks>
-        public void AddResponseHeader(string key, string value)
+        protected void AddResponseHeader(string key, string value)
         {
             if(!IsRunning)
             {
